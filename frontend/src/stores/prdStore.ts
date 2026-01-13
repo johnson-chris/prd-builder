@@ -44,12 +44,9 @@ export const usePrdStore = create<PrdState>((set, get) => ({
   },
 
   createPrd: async (title: string) => {
-    console.log('prdStore.createPrd called with title:', title);
     set({ isSaving: true, error: null });
     try {
-      console.log('Calling prdApi.create');
       const prd = await prdApi.create({ title });
-      console.log('prdApi.create returned:', prd);
       if (!prd.sections || prd.sections.length === 0) prd.sections = createDefaultSections();
       set({ currentPrd: prd, isSaving: false, hasUnsavedChanges: false, lastSavedAt: prd.updatedAt });
       return prd;
@@ -62,7 +59,10 @@ export const usePrdStore = create<PrdState>((set, get) => ({
       const prd = await prdApi.update(id, data);
       set({ currentPrd: prd, isSaving: false, hasUnsavedChanges: false, lastSavedAt: prd.updatedAt });
       storage.clearDraft(id);
-    } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to save PRD', isSaving: false }); throw error; }
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to save PRD', isSaving: false });
+      throw error;
+    }
   },
 
   deletePrd: async (id: string) => {

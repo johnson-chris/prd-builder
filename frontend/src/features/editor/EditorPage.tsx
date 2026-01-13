@@ -73,31 +73,14 @@ export function EditorPage(): JSX.Element {
   };
 
   const handleSave = async (): Promise<void> => {
-    console.log('handleSave called, title:', title);
-    if (!title.trim()) {
-      console.log('Title is empty, returning');
-      return;
-    }
+    if (!title.trim()) return;
     setSaving(true);
-    console.log('About to create PRD, isNew:', isNew, 'id:', id);
     try {
       if (isNew) {
-        // First create the PRD with just the title
-        console.log('isNew is true, calling createPrd now');
-        console.log('createPrd function:', typeof createPrd);
         const newPrd = await createPrd(title);
-        console.log('createPrd returned:', newPrd);
-        // Then update it with the full data
-        console.log('About to call updatePrd with sections:', sections.length);
-        await updatePrd(newPrd.id, {
-          title,
-          status,
-          sections,
-        });
-        console.log('updatePrd completed, clearing draft and navigating');
+        await updatePrd(newPrd.id, { title, status, sections });
         clearDraft();
         navigate(`/prd/${newPrd.id}`, { replace: true });
-        console.log('Navigation called');
       } else if (id) {
         await updatePrd(id, {
           title,
