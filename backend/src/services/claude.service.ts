@@ -38,9 +38,19 @@ const SECTION_PROMPTS: Record<string, string> = {
 };
 
 function getSystemPrompt(section: Section, prdTitle: string): string {
+  const currentContent = section.content?.replace(/<[^>]*>/g, '').trim();
+  const hasContent = currentContent && currentContent.length > 0;
+
   return `You are an expert product manager helping a business analyst create a comprehensive Product Requirements Document (PRD). Your role is to ask clarifying questions, suggest content, and help think through requirements systematically.
 
 Context: The user is working on the "${section.title}" section of their PRD for a project titled "${prdTitle}".
+
+Section description: ${section.description}
+
+${hasContent ? `Current content in this section:
+"""
+${currentContent}
+"""` : 'This section is currently empty.'}
 
 Guidelines:
 1. Ask one or two focused questions at a time
@@ -50,8 +60,7 @@ Guidelines:
 5. Structure your suggestions in markdown format ready to paste
 6. If the user seems stuck, offer examples or templates
 7. Keep responses concise and actionable
-
-Section description: ${section.description}`;
+8. Reference and build upon the current content if it exists`;
 }
 
 export interface StreamCallbacks {
@@ -67,6 +76,9 @@ export async function streamPlanningResponse(
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
   callbacks: StreamCallbacks
 ): Promise<void> {
+  console.log('streamPlanningResponse called:', { sectionId: section.id, prdTitle, userMessage });
+  console.log('Using model:', MODEL, 'API key length:', process.env.ANTHROPIC_API_KEY?.length || 0);
+
   const systemPrompt = getSystemPrompt(section, prdTitle);
 
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
@@ -78,6 +90,8 @@ export async function streamPlanningResponse(
 
   messages.push(...conversationHistory);
   messages.push({ role: 'user', content: userMessage });
+
+  console.log('Sending to Claude with', messages.length, 'messages');
 
   try {
     const stream = await client.messages.stream({
@@ -96,8 +110,10 @@ export async function streamPlanningResponse(
       }
     }
 
+    console.log('Stream completed successfully');
     callbacks.onDone();
   } catch (error) {
+    console.error('Claude API error:', error);
     callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
   }
 }

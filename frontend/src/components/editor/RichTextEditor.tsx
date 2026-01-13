@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -20,6 +21,13 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: { attributes: { class: 'prose prose-sm max-w-none focus:outline-none min-h-[120px] px-3 py-2' } },
   });
+
+  // Update editor content when prop changes (e.g., from AI suggestions)
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
 
   if (!editor) return <div className="h-32 animate-pulse rounded-md bg-gray-100" />;
 

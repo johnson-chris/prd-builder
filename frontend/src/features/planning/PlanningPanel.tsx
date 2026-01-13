@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui';
-import { api } from '@/lib/api';
+import { planningApi } from '@/lib/api';
 import type { PrdSection } from '@/types';
 
 interface Message {
@@ -22,10 +22,13 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll only within the messages container, not the entire page
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, currentResponse]);
 
   const sendMessage = async (): Promise<void> => {
@@ -37,83 +40,88 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
     setStreaming(true);
     setCurrentResponse('');
 
-    try {
-      const context = {
-        prdTitle,
-        sectionId: section.id,
-        sectionTitle: section.title,
-        sectionGuidance: section.guidance,
-        currentContent: section.content,
-        otherSections: allSections
-          .filter((s) => s.id !== section.id && s.content)
-          .map((s) => ({ title: s.title, content: s.content.substring(0, 500) })),
-      };
+    let fullResponse = '';
 
-      const response = await fetch(`${api.defaults.baseURL}/prds/${prdId}/planning`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({
-          sectionId: section.id,
-          message: userMessage,
-          conversationHistory: messages,
-          context,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
+    planningApi.sendMessage(
+      prdId,
+      section.id,
+      userMessage,
+      (chunk) => {
+        fullResponse += chunk;
+        setCurrentResponse(fullResponse);
+      },
+      () => {
+        setMessages((prev) => [...prev, { role: 'assistant', content: fullResponse }]);
+        setCurrentResponse('');
+        setStreaming(false);
+      },
+      (error) => {
+        console.error('Planning API error:', error);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
+        ]);
+        setStreaming(false);
       }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  fullResponse += parsed.content;
-                  setCurrentResponse(fullResponse);
-                }
-              } catch {
-                // Ignore parse errors for partial JSON
-              }
-            }
-          }
-        }
-      }
-
-      setMessages((prev) => [...prev, { role: 'assistant', content: fullResponse }]);
-      setCurrentResponse('');
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
-      ]);
-    } finally {
-      setStreaming(false);
-    }
+    );
   };
 
   const handleApply = (content: string): void => {
     // Extract content from markdown code blocks if present
     const codeBlockMatch = content.match(/```(?:html)?\n?([\s\S]*?)```/);
-    const cleanContent = codeBlockMatch ? codeBlockMatch[1].trim() : content;
+    let cleanContent = codeBlockMatch ? codeBlockMatch[1].trim() : content;
+
+    // Convert markdown to HTML for TipTap
+    cleanContent = markdownToHtml(cleanContent);
     onApplySuggestion(cleanContent);
+  };
+
+  // Simple markdown to HTML converter
+  const markdownToHtml = (md: string): string => {
+    let html = md;
+
+    // Convert headers (### Header -> <h3>Header</h3>)
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    // Convert bold (**text** -> <strong>text</strong>)
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Convert italic (*text* -> <em>text</em>)
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Convert unordered lists
+    const lines = html.split('\n');
+    let inList = false;
+    const processedLines: string[] = [];
+
+    for (const line of lines) {
+      const listMatch = line.match(/^[-*] (.+)$/);
+      if (listMatch) {
+        if (!inList) {
+          processedLines.push('<ul>');
+          inList = true;
+        }
+        processedLines.push(`<li>${listMatch[1]}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        // Convert line breaks to paragraphs for non-empty, non-HTML lines
+        if (line.trim() && !line.startsWith('<')) {
+          processedLines.push(`<p>${line}</p>`);
+        } else if (line.trim()) {
+          processedLines.push(line);
+        }
+      }
+    }
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+
+    return processedLines.join('');
   };
 
   const quickPrompts = [
@@ -137,7 +145,7 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
         </button>
       </div>
 
-      <div className="h-96 overflow-y-auto p-4">
+      <div ref={messagesContainerRef} className="h-96 overflow-y-auto p-4">
         {messages.length === 0 && !streaming && (
           <div className="space-y-2">
             <p className="text-sm text-text-muted mb-3">Quick prompts:</p>
@@ -183,8 +191,6 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       <div className="border-t border-border p-4">
@@ -203,7 +209,7 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
             size="sm"
             onClick={sendMessage}
             disabled={!input.trim() || streaming}
-            loading={streaming}
+            isLoading={streaming}
           >
             Send
           </Button>

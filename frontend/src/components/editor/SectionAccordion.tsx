@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { RichTextEditor } from './RichTextEditor';
 import type { PrdSection } from '@/types';
@@ -13,6 +13,12 @@ interface SectionAccordionProps {
 
 export function SectionAccordion({ section, onChange, onPlanningRequest, isActive, onToggle }: SectionAccordionProps): JSX.Element {
   const [localContent, setLocalContent] = useState(section.content);
+
+  // Sync local state when parent content changes (e.g., from AI suggestions)
+  useEffect(() => {
+    setLocalContent(section.content);
+  }, [section.content]);
+
   const hasContent = localContent.replace(/<[^>]*>/g, '').trim().length > 0;
 
   const handleChange = (html: string): void => {

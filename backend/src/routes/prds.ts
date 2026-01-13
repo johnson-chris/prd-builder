@@ -100,6 +100,8 @@ prdsRouter.post(
   '/:id/sections/:sectionId/plan/message',
   planningRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Planning endpoint hit:', req.params.id, req.params.sectionId);
+    console.log('Request body:', req.body);
     try {
       const input = planningMessageSchema.parse(req.body);
       const prd = await getPrd(req.params.id, req.user!.userId);
