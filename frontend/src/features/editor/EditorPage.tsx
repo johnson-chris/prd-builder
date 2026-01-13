@@ -183,6 +183,7 @@ export function EditorPage(): JSX.Element {
               onPlanningRequest={() => setPlanningSection(index)}
               isActive={activeSection === index}
               onToggle={() => setActiveSection(activeSection === index ? null : index)}
+              isNewPrd={isNew}
             />
           ))}
         </div>
