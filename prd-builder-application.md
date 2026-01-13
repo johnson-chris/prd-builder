@@ -116,6 +116,22 @@ So that I can adapt it to my organization's standards
 - Option to save multiple template variations
 - Templates can be set as default
 
+**US-006: PRD HTML View for Review**
+```
+As a business analyst
+I want to view my PRD in a clean, formatted HTML page
+So that I can review and share it professionally with stakeholders
+```
+**Acceptance Criteria:**
+- Dedicated view page accessible via `/prd/:id/view` route
+- Clean, professional layout with all sections rendered
+- Table of contents with clickable navigation to sections
+- Print/PDF button to generate printable version via browser
+- Copy link button for easy sharing (authenticated users only)
+- Edit button to quickly return to editor
+- Status badge and metadata displayed (version, dates, completeness)
+- Print-optimized styles that hide navigation and action buttons
+
 ### Use Cases
 
 **Use Case 1: First-Time PRD Creation**
@@ -284,6 +300,23 @@ version: [Semantic Version]
   - Jira/Linear integration (create tickets from user stories)
   - Slack notifications for PRD status changes
   - API for programmatic access
+
+### FR-011: PRD HTML View
+- **Priority**: P0 (Must Have)
+- **Description**: Clean HTML view page for PRD review and sharing
+- **Requirements**:
+  - Dedicated route at `/prd/:id/view` for each PRD
+  - Professional, clean layout optimized for reading
+  - Table of contents with anchor links to each section
+  - Smooth-scroll navigation when clicking TOC items
+  - Section completion indicators in TOC (checkmark for completed sections)
+  - Metadata header showing title, status, version, dates
+  - Completeness progress bar
+  - Action buttons: Print/PDF, Copy Link, Edit PRD
+  - Print styles via CSS `@media print` rules
+  - Hidden action buttons and navigation when printing
+  - Page break optimization for PDF export
+  - Authentication required (no public sharing in MVP)
 
 ## Non-Functional Requirements
 
@@ -490,6 +523,9 @@ interface Message {
 - `GET /api/prds/:id/download` - Download PRD as markdown
 - `POST /api/prds/bulk-export` - Export multiple PRDs as ZIP
 
+**PRD View (Frontend Route)**
+- `/prd/:id/view` - Clean HTML view page for PRD review (uses same GET `/api/prds/:id` endpoint)
+
 **Planning Mode**
 - `POST /api/prds/:id/sections/:sectionId/plan` - Start planning conversation
 - `POST /api/prds/:id/sections/:sectionId/plan/message` - Send message to Claude
@@ -585,7 +621,31 @@ interface Message {
 - "Start Over" button to reset conversation
 - Context indicator showing which section is being discussed
 
-**4. Settings**
+**4. PRD View Page**
+- Clean, distraction-free reading layout
+- Header with:
+  - Back to Dashboard navigation
+  - Action buttons: Copy Link, Print/PDF, Edit PRD
+- Document content (max-width: 4xl for readability):
+  - PRD title with status badge
+  - Metadata grid: version, status, created date, updated date
+  - Completeness progress bar (hidden when printing)
+  - Table of contents panel:
+    - Numbered list of all sections
+    - Checkmark indicators for completed sections
+    - Clickable links with smooth-scroll navigation
+    - "Required" markers for mandatory sections
+  - Section content:
+    - Section titles with anchor IDs
+    - HTML content rendered with prose typography
+    - "No content provided" placeholder for empty sections
+- Print-optimized CSS:
+  - Action buttons and TOC hidden
+  - White background, black text
+  - Page break handling for sections
+  - Removed shadows and decorative borders
+
+**5. Settings**
 - User profile editing
 - Default template selection
 - Auto-save interval preference
@@ -1069,6 +1129,7 @@ The quality scoring system evaluates PRDs on the following dimensions:
 
 **Version History:**
 - v1.0.0 (2026-01-12): Initial PRD
+- v1.1.0 (2026-01-13): Added PRD HTML View feature (US-006, FR-011)
 
 **Approval:**
 - Product Manager: [Pending]

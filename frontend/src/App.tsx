@@ -6,6 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { EditorPage } from '@/features/editor/EditorPage';
+import { PrdViewPage } from '@/features/view';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 
 export default function App(): JSX.Element {
@@ -30,6 +31,7 @@ export default function App(): JSX.Element {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/prd/new" element={<EditorPage />} />
         <Route path="/prd/:id" element={<EditorPage />} />
+        <Route path="/prd/:id/view" element={<PrdViewPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePrdStore } from '@/stores/prdStore';
 import { Button, Input, Select } from '@/components/ui';
 import { SectionAccordion } from '@/components/editor';
@@ -133,9 +133,14 @@ export function EditorPage(): JSX.Element {
 
           <div className="flex items-center gap-3">
             {!isNew && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                Export MD
-              </Button>
+              <>
+                <Link to={`/prd/${id}/view`}>
+                  <Button variant="secondary" size="sm">View PRD</Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  Export MD
+                </Button>
+              </>
             )}
             <Button variant="accent" onClick={handleSave} isLoading={saving} disabled={!title.trim()}>
               {isNew ? 'Create PRD' : 'Save Changes'}

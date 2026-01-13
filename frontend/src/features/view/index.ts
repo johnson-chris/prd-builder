@@ -1,0 +1,1 @@
+export { PrdViewPage } from './PrdViewPage';

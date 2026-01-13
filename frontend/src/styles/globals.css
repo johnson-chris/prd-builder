@@ -31,3 +31,50 @@
 .ProseMirror code { @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono; }
 .ProseMirror pre { @apply bg-primary text-white p-4 rounded-lg my-4 overflow-x-auto; }
 .ProseMirror pre code { @apply bg-transparent p-0 text-white; }
+
+/* Print styles for PRD view */
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  header,
+  .action-buttons {
+    display: none !important;
+  }
+
+  /* Reset page layout */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt !important;
+  }
+
+  /* Optimize content for printing */
+  .prd-content {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Page break handling */
+  .prd-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .prd-section-title {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Ensure good contrast */
+  .prose {
+    color: black !important;
+  }
+
+  /* Remove decorative elements */
+  .rounded-lg,
+  .shadow-card {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
