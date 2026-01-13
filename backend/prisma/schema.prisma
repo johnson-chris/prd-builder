@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  preferences   Json           @default("{\"autoSaveInterval\": 60000}")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  prds          Prd[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+}
+
+model Prd {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                 String
+  status                String   @default("draft")
+  version               String   @default("1.0.0")
+  sections              Json     @default("[]")
+  planningConversations Json     @default("{}")
+  markdownContent       String?
+  completenessScore     Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-background text-text antialiased; }
+  * { @apply border-border; }
+  :focus-visible { @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center rounded px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply btn bg-primary text-white hover:bg-primary-800; }
+  .btn-secondary { @apply btn bg-white text-primary border border-border hover:bg-gray-50; }
+  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-700; }
+  .btn-ghost { @apply btn hover:bg-gray-100; }
+  .btn-danger { @apply btn bg-error text-white hover:bg-red-700; }
+  .input { @apply w-full rounded border border-border bg-white px-3 py-2 text-sm placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-50; }
+  .label { @apply text-sm font-medium text-text; }
+  .card { @apply rounded-lg border border-border bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover; }
+}
+
+.ProseMirror { @apply min-h-[200px] outline-none; }
+.ProseMirror p.is-editor-empty:first-child::before { @apply pointer-events-none float-left h-0 text-text-muted; content: attr(data-placeholder); }
+.ProseMirror h3 { @apply text-lg font-semibold mt-4 mb-2; }
+.ProseMirror h4 { @apply text-base font-semibold mt-3 mb-1; }
+.ProseMirror ul, .ProseMirror ol { @apply pl-6 my-2; }
+.ProseMirror ul { @apply list-disc; }
+.ProseMirror ol { @apply list-decimal; }
+.ProseMirror li { @apply my-1; }
+.ProseMirror code { @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono; }
+.ProseMirror pre { @apply bg-primary text-white p-4 rounded-lg my-4 overflow-x-auto; }
+.ProseMirror pre code { @apply bg-transparent p-0 text-white; }
