@@ -148,3 +148,6 @@ export const PRD_STATUS_OPTIONS = [
 ];
 
 export const REQUIRED_SECTION_COUNT = PRD_SECTION_TEMPLATES.filter((s) => s.required).length;
+
+// Re-export transcript types
+export * from './transcript';

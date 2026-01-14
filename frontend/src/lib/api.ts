@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import type { AuthResponse, LoginCredentials, RegisterData, User, Prd, PrdListResponse, CreatePrdInput, UpdatePrdInput } from '@/types';
+import type { AuthResponse, LoginCredentials, RegisterData, User, Prd, PrdListResponse, CreatePrdInput, UpdatePrdInput, ExtractedSection, TranscriptSSEEvent } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -98,6 +98,83 @@ export const planningApi = {
         }
         onDone();
       } catch (error) { if ((error as Error).name !== 'AbortError') onError(error as Error); }
+    };
+    fetchSSE();
+    return () => controller.abort();
+  },
+};
+
+export interface TranscriptAnalysisCallbacks {
+  onProgress: (stage: string, progress: number) => void;
+  onSection: (section: ExtractedSection) => void;
+  onComplete: (suggestedTitle: string, analysisNotes: string) => void;
+  onError: (error: Error) => void;
+}
+
+export const transcriptApi = {
+  analyze: (
+    transcript: string,
+    callbacks: TranscriptAnalysisCallbacks
+  ): (() => void) => {
+    const controller = new AbortController();
+    const fetchSSE = async (): Promise<void> => {
+      try {
+        const response = await fetch(`${API_URL}/api/transcript/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ transcript }),
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        }
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') return;
+              try {
+                const parsed = JSON.parse(data) as TranscriptSSEEvent;
+                switch (parsed.type) {
+                  case 'progress':
+                    callbacks.onProgress(parsed.stage, parsed.progress);
+                    break;
+                  case 'section':
+                    callbacks.onSection({
+                      sectionId: parsed.sectionId,
+                      sectionTitle: parsed.sectionTitle,
+                      content: parsed.content,
+                      confidence: parsed.confidence,
+                      sourceQuotes: parsed.sourceQuotes,
+                      included: true,
+                    });
+                    break;
+                  case 'complete':
+                    callbacks.onComplete(parsed.suggestedTitle, parsed.analysisNotes);
+                    break;
+                  case 'error':
+                    callbacks.onError(new Error(parsed.message));
+                    break;
+                }
+              } catch { }
+            }
+          }
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          callbacks.onError(error as Error);
+        }
+      }
     };
     fetchSSE();
     return () => controller.abort();

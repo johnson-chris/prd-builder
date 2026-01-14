@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrdStore } from '@/stores/prdStore';
 import { formatDate } from '@/lib/utils';
+import { TranscriptImportModal } from '@/features/transcript';
 
 export function DashboardPage(): JSX.Element {
   const { prds, loading, error, fetchPrds, deletePrd } = usePrdStore();
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
 
   useEffect(() => {
     fetchPrds();
@@ -43,9 +45,22 @@ export function DashboardPage(): JSX.Element {
   return (
     <div className="animate-fade-in-up" style={{ animationFillMode: 'both' }}>
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="font-display text-4xl font-semibold text-stone-900 mb-2">Your PRDs</h1>
-        <p className="text-stone-500 text-lg">Manage and create product requirements documents</p>
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-4xl font-semibold text-stone-900 mb-2">Your PRDs</h1>
+          <p className="text-stone-500 text-lg">Manage and create product requirements documents</p>
+        </div>
+        {prds.length > 0 && (
+          <button
+            onClick={() => setShowTranscriptModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 transition-all hover:border-stone-300 hover:bg-stone-50"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Create from Transcript
+          </button>
+        )}
       </div>
 
       {/* Error */}
@@ -70,14 +85,25 @@ export function DashboardPage(): JSX.Element {
           </div>
           <h3 className="font-display text-2xl font-medium text-stone-900 mb-2">No PRDs yet</h3>
           <p className="text-stone-500 mb-8">Get started by creating your first product requirements document</p>
-          <Link to="/prd/new">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-base font-medium text-white transition-all hover:bg-stone-800 hover:shadow-lg hover:shadow-stone-900/20">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/prd/new">
+              <button className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-base font-medium text-white transition-all hover:bg-stone-800 hover:shadow-lg hover:shadow-stone-900/20">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Create your first PRD
+              </button>
+            </Link>
+            <button
+              onClick={() => setShowTranscriptModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-stone-200 bg-white px-6 py-3 text-base font-medium text-stone-700 transition-all hover:border-stone-300 hover:bg-stone-50"
+            >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Create your first PRD
+              Create from Transcript
             </button>
-          </Link>
+          </div>
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -157,6 +183,12 @@ export function DashboardPage(): JSX.Element {
           ))}
         </div>
       )}
+
+      {/* Transcript Import Modal */}
+      <TranscriptImportModal
+        isOpen={showTranscriptModal}
+        onClose={() => setShowTranscriptModal(false)}
+      />
     </div>
   );
 }

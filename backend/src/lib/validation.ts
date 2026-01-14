@@ -42,6 +42,13 @@ export const planningMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(5000, 'Message too long'),
 });
 
+export const analyzeTranscriptSchema = z.object({
+  transcript: z
+    .string()
+    .min(100, 'Transcript must be at least 100 characters')
+    .max(50000, 'Transcript must be less than 50,000 characters'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreatePrdInput = z.infer<typeof createPrdSchema>;
