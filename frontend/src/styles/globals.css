@@ -1,12 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-background text-text antialiased; }
+  body { @apply bg-background text-text antialiased font-sans; }
   * { @apply border-border; }
   :focus-visible { @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background; }
 }
+
+/* Auth page - Warm Scandinavian Minimalist */
+.auth-page {
+  background: #FDFBF7;
+  min-height: 100vh;
+}
+
+.auth-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  animation: blob-float 20s ease-in-out infinite;
+}
+
+.auth-blob-1 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
+  top: -100px;
+  right: -100px;
+}
+
+.auth-blob-2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #D6D3D1 0%, #A8A29E 100%);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -10s;
+}
+
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 20px 40px -10px rgba(0, 0, 0, 0.08);
+}
+
+.auth-input-warm {
+  background: #FDFBF7;
+  border: 2px solid #E7E5E4;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  color: #1C1917;
+}
+
+.auth-input-warm::placeholder {
+  color: #A8A29E;
+}
+
+.auth-input-warm:hover {
+  border-color: #D6D3D1;
+}
+
+.auth-input-warm:focus {
+  outline: none;
+  border-color: #C2410C;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.1);
+}
+
+.auth-btn-primary {
+  background: #1C1917;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 32px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn-primary:hover {
+  background: #292524;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -10px rgba(28, 25, 23, 0.5);
+}
+
+.auth-btn-primary:active {
+  transform: translateY(0);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Floating papers animation */
+.floating-paper {
+  position: absolute;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  animation: paper-float 15s ease-in-out infinite;
+}
+
+.floating-paper::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  height: 8px;
+  background: #E7E5E4;
+  border-radius: 4px;
+}
+
+.floating-paper::after {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 12px;
+  right: 30%;
+  height: 6px;
+  background: #F5F5F4;
+  border-radius: 3px;
+}
+
+@keyframes paper-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(2deg); }
+  50% { transform: translateY(-5px) rotate(-1deg); }
+  75% { transform: translateY(-20px) rotate(1deg); }
+}
+
+/* Staggered animation delays */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+.animate-delay-500 { animation-delay: 500ms; }
 
 @layer components {
   .btn { @apply inline-flex items-center justify-center rounded px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50; }
