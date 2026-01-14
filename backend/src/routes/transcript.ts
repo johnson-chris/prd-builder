@@ -21,35 +21,39 @@ transcriptRouter.post(
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders();
 
-      await streamTranscriptAnalysis(input.transcript, {
-        onProgress: (stage, progress) => {
-          res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
+      await streamTranscriptAnalysis(
+        input.transcript,
+        {
+          onProgress: (stage, progress) => {
+            res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
+          },
+          onSection: (section) => {
+            res.write(
+              `data: ${JSON.stringify({
+                type: 'section',
+                sectionId: section.sectionId,
+                sectionTitle: section.sectionTitle,
+                content: section.content,
+                confidence: section.confidence,
+                sourceQuotes: section.sourceQuotes,
+              })}\n\n`
+            );
+          },
+          onComplete: (suggestedTitle, analysisNotes) => {
+            res.write(
+              `data: ${JSON.stringify({ type: 'complete', suggestedTitle, analysisNotes })}\n\n`
+            );
+            res.write('data: [DONE]\n\n');
+            res.end();
+          },
+          onError: (error) => {
+            console.error('Transcript analysis error:', error);
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+            res.end();
+          },
         },
-        onSection: (section) => {
-          res.write(
-            `data: ${JSON.stringify({
-              type: 'section',
-              sectionId: section.sectionId,
-              sectionTitle: section.sectionTitle,
-              content: section.content,
-              confidence: section.confidence,
-              sourceQuotes: section.sourceQuotes,
-            })}\n\n`
-          );
-        },
-        onComplete: (suggestedTitle, analysisNotes) => {
-          res.write(
-            `data: ${JSON.stringify({ type: 'complete', suggestedTitle, analysisNotes })}\n\n`
-          );
-          res.write('data: [DONE]\n\n');
-          res.end();
-        },
-        onError: (error) => {
-          console.error('Transcript analysis error:', error);
-          res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-          res.end();
-        },
-      });
+        input.context
+      );
     } catch (error) {
       next(error);
     }

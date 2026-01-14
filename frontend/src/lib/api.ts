@@ -130,7 +130,8 @@ export interface TranscriptAnalysisCallbacks {
 export const transcriptApi = {
   analyze: (
     transcript: string,
-    callbacks: TranscriptAnalysisCallbacks
+    callbacks: TranscriptAnalysisCallbacks,
+    context?: string
   ): (() => void) => {
     const controller = new AbortController();
     const fetchSSE = async (): Promise<void> => {
@@ -138,7 +139,7 @@ export const transcriptApi = {
         const response = await fetch(`${API_URL}/api/transcript/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ transcript }),
+          body: JSON.stringify({ transcript, context: context || undefined }),
           signal: controller.signal,
         });
         if (!response.ok) {

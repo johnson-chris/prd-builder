@@ -47,6 +47,10 @@ export const analyzeTranscriptSchema = z.object({
     .string()
     .min(100, 'Transcript must be at least 100 characters')
     .max(50000, 'Transcript must be less than 50,000 characters'),
+  context: z
+    .string()
+    .max(2000, 'Context must be less than 2,000 characters')
+    .optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

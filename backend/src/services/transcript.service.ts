@@ -70,12 +70,29 @@ Begin analyzing now. Output only JSON lines, no other text.`;
 
 export async function streamTranscriptAnalysis(
   transcript: string,
-  callbacks: TranscriptStreamCallbacks
+  callbacks: TranscriptStreamCallbacks,
+  context?: string
 ): Promise<void> {
-  console.log('streamTranscriptAnalysis called, transcript length:', transcript.length);
+  console.log('streamTranscriptAnalysis called, transcript length:', transcript.length, 'context:', context ? 'provided' : 'none');
 
   const systemPrompt = getTranscriptSystemPrompt();
-  const userMessage = `## Transcript to Analyze
+
+  let userMessage = '';
+
+  // Add context if provided
+  if (context && context.trim()) {
+    userMessage += `## Project Context
+
+The following context was provided to help you better understand the meeting and project:
+
+${context.trim()}
+
+---
+
+`;
+  }
+
+  userMessage += `## Transcript to Analyze
 
 ${transcript}
 
