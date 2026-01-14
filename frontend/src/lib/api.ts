@@ -10,9 +10,12 @@ export const api = axios.create({
 });
 
 let accessToken: string | null = null;
+let refreshPromise: Promise<string> | null = null;
+let onAuthFailure: (() => void) | null = null;
 
 export function setAccessToken(token: string | null): void { accessToken = token; }
 export function getAccessToken(): string | null { return accessToken; }
+export function setAuthFailureHandler(handler: () => void): void { onAuthFailure = handler; }
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
@@ -28,12 +31,25 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest) {
       originalRequest._retry = true;
       try {
-        const response = await api.post<{ accessToken: string }>('/auth/refresh');
-        setAccessToken(response.data.accessToken);
-        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+        // Use a single refresh promise to prevent multiple simultaneous refresh requests
+        if (!refreshPromise) {
+          refreshPromise = api.post<{ accessToken: string }>('/auth/refresh')
+            .then((response) => {
+              setAccessToken(response.data.accessToken);
+              return response.data.accessToken;
+            })
+            .finally(() => {
+              refreshPromise = null;
+            });
+        }
+        const newToken = await refreshPromise;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch {
         setAccessToken(null);
+        refreshPromise = null;
+        // Notify auth failure handler to trigger logout/redirect
+        if (onAuthFailure) onAuthFailure();
         return Promise.reject(error);
       }
     }

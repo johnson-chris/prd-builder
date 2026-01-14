@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
-import { authApi, setAccessToken } from '@/lib/api';
+import { authApi, setAccessToken, setAuthFailureHandler } from '@/lib/api';
 
 interface AuthState {
   user: User | null;
@@ -55,5 +55,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+// Register auth failure handler to clear state when token refresh fails
+setAuthFailureHandler(() => {
+  setAccessToken(null);
+  useAuthStore.setState({ user: null, isAuthenticated: false });
+});
 
 useAuthStore.getState().initialize();

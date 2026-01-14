@@ -1,9 +1,15 @@
 import { create } from 'zustand';
+import axios from 'axios';
 import type { Prd, PrdListItem, Section, UpdatePrdInput } from '@/types';
 import { createDefaultSections } from '@/types';
 import { prdApi } from '@/lib/api';
 import { storage } from '@/lib/storage';
 import { calculateCompleteness } from '@/lib/utils';
+
+// Helper to check if error is an auth error (401) - these are handled by auth failure handler
+function isAuthError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 401;
+}
 
 interface PrdState {
   prds: PrdListItem[]; totalPrds: number; currentPage: number; isLoadingList: boolean;
@@ -32,7 +38,11 @@ export const usePrdStore = create<PrdState>((set, get) => ({
     try {
       const response = await prdApi.list(page);
       set({ prds: response.prds, totalPrds: response.total, currentPage: page, isLoadingList: false });
-    } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to fetch PRDs', isLoadingList: false }); }
+    } catch (error) {
+      // Don't show error for 401s - auth failure handler will redirect to login
+      if (isAuthError(error)) { set({ isLoadingList: false }); return; }
+      set({ error: error instanceof Error ? error.message : 'Failed to fetch PRDs', isLoadingList: false });
+    }
   },
 
   fetchPrd: async (id: string) => {
@@ -40,7 +50,10 @@ export const usePrdStore = create<PrdState>((set, get) => ({
     try {
       const prd = await prdApi.get(id);
       set({ currentPrd: prd, isLoadingPrd: false, hasUnsavedChanges: false, lastSavedAt: prd.updatedAt });
-    } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to fetch PRD', isLoadingPrd: false }); }
+    } catch (error) {
+      if (isAuthError(error)) { set({ isLoadingPrd: false }); return; }
+      set({ error: error instanceof Error ? error.message : 'Failed to fetch PRD', isLoadingPrd: false });
+    }
   },
 
   createPrd: async (title: string) => {
@@ -50,7 +63,10 @@ export const usePrdStore = create<PrdState>((set, get) => ({
       if (!prd.sections || prd.sections.length === 0) prd.sections = createDefaultSections();
       set({ currentPrd: prd, isSaving: false, hasUnsavedChanges: false, lastSavedAt: prd.updatedAt });
       return prd;
-    } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to create PRD', isSaving: false }); throw error; }
+    } catch (error) {
+      if (isAuthError(error)) { set({ isSaving: false }); throw error; }
+      set({ error: error instanceof Error ? error.message : 'Failed to create PRD', isSaving: false }); throw error;
+    }
   },
 
   updatePrd: async (id: string, data: UpdatePrdInput) => {
@@ -60,6 +76,7 @@ export const usePrdStore = create<PrdState>((set, get) => ({
       set({ currentPrd: prd, isSaving: false, hasUnsavedChanges: false, lastSavedAt: prd.updatedAt });
       storage.clearDraft(id);
     } catch (error) {
+      if (isAuthError(error)) { set({ isSaving: false }); throw error; }
       set({ error: error instanceof Error ? error.message : 'Failed to save PRD', isSaving: false });
       throw error;
     }
@@ -70,12 +87,18 @@ export const usePrdStore = create<PrdState>((set, get) => ({
       await prdApi.delete(id);
       set((state) => ({ prds: state.prds.filter((p) => p.id !== id), totalPrds: state.totalPrds - 1, currentPrd: state.currentPrd?.id === id ? null : state.currentPrd }));
       storage.clearDraft(id);
-    } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete PRD' }); throw error; }
+    } catch (error) {
+      if (isAuthError(error)) throw error;
+      set({ error: error instanceof Error ? error.message : 'Failed to delete PRD' }); throw error;
+    }
   },
 
   downloadPrd: async (id: string) => {
     try { return await prdApi.download(id); }
-    catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to download PRD' }); throw error; }
+    catch (error) {
+      if (isAuthError(error)) throw error;
+      set({ error: error instanceof Error ? error.message : 'Failed to download PRD' }); throw error;
+    }
   },
 
   setCurrentPrd: (prd) => set({ currentPrd: prd, hasUnsavedChanges: false, lastSavedAt: prd?.updatedAt ?? null }),
