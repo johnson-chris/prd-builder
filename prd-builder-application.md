@@ -132,6 +132,23 @@ So that I can review and share it professionally with stakeholders
 - Status badge and metadata displayed (version, dates, completeness)
 - Print-optimized styles that hide navigation and action buttons
 
+**US-007: Create PRD from Meeting Transcript**
+```
+As a product manager
+I want to upload a meeting transcript and have AI extract PRD content
+So that I can quickly bootstrap a PRD from stakeholder discussions
+```
+**Acceptance Criteria:**
+- File upload supporting .txt and .vtt (WebVTT caption) formats
+- Text paste option for transcripts up to 50,000 characters
+- AI analyzes transcript and extracts relevant content for each PRD section
+- Confidence indicators (high/medium/low) for each extracted section
+- Source quotes from transcript shown for transparency
+- Preview screen to review and toggle sections before creating
+- Suggested PRD title based on transcript content
+- User can modify title and exclude sections before final creation
+- Created PRD opens in editor for further refinement
+
 ### Use Cases
 
 **Use Case 1: First-Time PRD Creation**
@@ -162,6 +179,20 @@ So that I can review and share it professionally with stakeholders
 2. User clicks "Export Selected"
 3. System packages PRDs into ZIP file with organized folder structure
 4. User downloads package for integration with development workflow
+
+**Use Case 4: Create PRD from Meeting Transcript**
+1. User clicks "Create from Transcript" on dashboard
+2. System opens transcript import wizard
+3. User uploads .txt or .vtt file OR pastes transcript text
+4. User clicks "Analyze Transcript"
+5. System shows progress as Claude processes transcript
+6. System displays extracted content for each PRD section with confidence levels
+7. User reviews source quotes to verify extraction accuracy
+8. User toggles off any sections to exclude
+9. User modifies suggested PRD title if needed
+10. User clicks "Create PRD"
+11. System creates PRD with pre-filled sections
+12. System navigates to editor for further refinement
 
 ## Functional Requirements
 
@@ -317,6 +348,30 @@ version: [Semantic Version]
   - Hidden action buttons and navigation when printing
   - Page break optimization for PDF export
   - Authentication required (no public sharing in MVP)
+
+### FR-012: Transcript Import for PRD Creation
+- **Priority**: P1 (Should Have)
+- **Description**: AI-powered extraction of PRD content from meeting transcripts
+- **Requirements**:
+  - "Create from Transcript" button on dashboard
+  - File upload supporting .txt and .vtt formats
+  - VTT parser to extract text from WebVTT caption files
+  - Text paste area for manual transcript input
+  - Character limit: 100 minimum, 50,000 maximum
+  - SSE streaming for real-time progress updates during analysis
+  - Claude integration to extract content for all 13 PRD sections
+  - Confidence level indicators (high/medium/low) per section
+  - Source quote attribution showing original transcript text
+  - Preview interface with section toggles (include/exclude)
+  - Suggested title generation based on transcript content
+  - Direct PRD creation from extracted content
+  - Navigation to editor after successful creation
+
+**Transcript Analysis Prompt:**
+- System prompt instructs Claude to extract PRD content from transcript
+- Outputs structured JSON per section with content, confidence, and quotes
+- Confidence levels based on explicit vs. inferred information
+- Handles incomplete transcripts gracefully with low-confidence placeholders
 
 ## Non-Functional Requirements
 
@@ -531,6 +586,9 @@ interface Message {
 - `POST /api/prds/:id/sections/:sectionId/plan/message` - Send message to Claude
 - `GET /api/prds/:id/sections/:sectionId/plan/history` - Get conversation history
 
+**Transcript Import**
+- `POST /api/transcript/analyze` - Analyze transcript and extract PRD content (SSE streaming)
+
 **Templates**
 - `GET /api/templates` - List available templates
 - `POST /api/templates` - Create new template
@@ -654,38 +712,41 @@ interface Message {
 
 ### Design Aesthetic Direction
 
-**Concept**: Professional Editorial with Technical Precision
+**Concept**: Warm Scandinavian Minimalist
+
+A refined, approachable design that prioritizes clarity and warmth over cold corporate aesthetics.
 
 **Typography:**
-- Headlines: "Fira Sans" or "IBM Plex Sans" (technical yet refined)
-- Body: "Inter" alternative like "Archivo" or "Public Sans"
+- Display/Headlines: "Cormorant Garamond" (elegant serif for titles)
+- Body: "Outfit" (clean, modern sans-serif)
 - Monospace (code/markdown): "JetBrains Mono" or "Fira Code"
 
 **Color Palette:**
-- Primary: Deep Navy (#1a2332)
-- Secondary: Teal Accent (#00bfa5)
-- Background: Warm Off-White (#f8f7f4)
-- Text: Charcoal (#2d3748)
-- Borders: Subtle Gray (#e2e8f0)
-- Success: Forest Green (#059669)
-- Warning: Amber (#f59e0b)
-- Error: Crimson (#dc2626)
+- Background: Warm Cream (#FDFBF7)
+- Primary: Stone-900 (#1C1917)
+- Text: Stone-700 (#44403C) to Stone-900 (#1C1917)
+- Borders: Stone-200 (#E7E5E4) with 50% opacity
+- Success: Emerald (#10B981) for completed states
+- Warning: Amber (#F59E0B) for required/attention states
+- Error: Red-600 (#DC2626)
+- Accents: Stone gradient (400 to 600) for progress bars
 
 **Visual Elements:**
-- Subtle grid background pattern
-- Cards with soft shadows and slight border radius (8px)
-- Hover states with smooth transitions (200ms ease)
-- Focus states with colored outline for accessibility
-- Status badges with distinctive colors
+- Glassmorphism header with backdrop blur
+- Cards with rounded-2xl borders (16px radius)
+- Subtle shadows with stone-colored tints
+- Smooth transitions (200ms ease) on all interactions
+- Staggered fade-in-up animations for lists
+- Floating ambient blobs on auth pages
+- Status badges with soft color fills
 - Progress bars with gradient fills
-- Micro-interactions on buttons and form elements
 
 **Layout:**
-- Generous whitespace (24px+ margins)
-- Consistent 8px spacing system
-- Responsive grid (12 columns on desktop, 4 on tablet)
-- Maximum content width: 1400px
-- Sidebar width: 280px (collapsible)
+- Generous whitespace with cream background
+- Consistent spacing using Tailwind scale
+- Maximum content width: 7xl (1280px)
+- Responsive design (mobile-friendly)
+- Sticky header with blur effect
 
 ## Timeline and Milestones
 
@@ -1130,6 +1191,7 @@ The quality scoring system evaluates PRDs on the following dimensions:
 **Version History:**
 - v1.0.0 (2026-01-12): Initial PRD
 - v1.1.0 (2026-01-13): Added PRD HTML View feature (US-006, FR-011)
+- v1.2.0 (2026-01-13): Added Transcript Import feature (US-007, FR-012) - AI-powered PRD creation from meeting transcripts with .txt/.vtt support
 
 **Approval:**
 - Product Manager: [Pending]
