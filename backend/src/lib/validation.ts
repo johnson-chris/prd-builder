@@ -53,6 +53,17 @@ export const analyzeTranscriptSchema = z.object({
     .optional(),
 });
 
+export const analyzeFilesSchema = z.object({
+  context: z
+    .string()
+    .max(2000, 'Context must be less than 2,000 characters')
+    .optional(),
+  gitUrl: z
+    .string()
+    .url('Invalid Git URL')
+    .optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreatePrdInput = z.infer<typeof createPrdSchema>;

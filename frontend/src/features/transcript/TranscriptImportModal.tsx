@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { transcriptApi } from '@/lib/api';
 import { usePrdStore } from '@/stores/prdStore';
@@ -20,7 +21,6 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
 
   const [step, setStep] = useState<Step>('input');
   const [transcript, setTranscript] = useState('');
-  const [context, setContext] = useState('');
   const [error, setError] = useState<string | undefined>();
 
   // Processing state
@@ -39,7 +39,6 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
     if (!isOpen) {
       setStep('input');
       setTranscript('');
-      setContext('');
       setError(undefined);
       setStage('analyzing');
       setProgress(0);
@@ -66,32 +65,28 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
     setProgress(0);
     setSections([]);
 
-    const abort = transcriptApi.analyze(
-      transcript,
-      {
-        onProgress: (s, p) => {
-          setStage(s);
-          setProgress(p);
-        },
-        onSection: (section) => {
-          setSections((prev) => [...prev, section]);
-        },
-        onComplete: (title, notes) => {
-          setSuggestedTitle(title);
-          setAnalysisNotes(notes);
-          setStep('preview');
-        },
-        onError: (err) => {
-          console.error('Transcript analysis error:', err);
-          setError(err.message || 'Analysis failed. Please try again.');
-          setStep('input');
-        },
+    const abort = transcriptApi.analyze(transcript, {
+      onProgress: (s, p) => {
+        setStage(s);
+        setProgress(p);
       },
-      context || undefined
-    );
+      onSection: (section) => {
+        setSections((prev) => [...prev, section]);
+      },
+      onComplete: (title, notes) => {
+        setSuggestedTitle(title);
+        setAnalysisNotes(notes);
+        setStep('preview');
+      },
+      onError: (err) => {
+        console.error('Transcript analysis error:', err);
+        setError(err.message || 'Analysis failed. Please try again.');
+        setStep('input');
+      },
+    });
 
     setAbortFn(() => abort);
-  }, [transcript, context]);
+  }, [transcript]);
 
   const handleCancel = useCallback(() => {
     if (abortFn) abortFn();
@@ -157,19 +152,21 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm"
         onClick={step === 'processing' ? undefined : onClose}
       />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-3xl rounded-3xl bg-white border border-stone-200/50 shadow-2xl animate-fade-in-up"
-        style={{ animationFillMode: 'both' }}
-      >
+      {/* Centering wrapper */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        {/* Modal */}
+        <div
+          className="relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white border border-stone-200/50 shadow-2xl animate-fade-in-up"
+          style={{ animationFillMode: 'both' }}
+        >
         {/* Header */}
         <div className="px-8 py-6 border-b border-stone-100">
           <div className="flex items-center justify-between">
@@ -216,14 +213,12 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
         </div>
 
         {/* Content */}
-        <div className="px-8 py-6 max-h-[60vh] overflow-y-auto">
+        <div className="px-8 py-6 flex-1 min-h-0 overflow-y-auto">
           {step === 'input' && (
             <>
               <TranscriptInput
                 value={transcript}
                 onChange={setTranscript}
-                context={context}
-                onContextChange={setContext}
                 error={error}
               />
               <div className="mt-6 flex justify-end">
@@ -263,7 +258,9 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
             />
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

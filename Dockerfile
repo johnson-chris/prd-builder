@@ -24,6 +24,9 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
+# Install git for repository cloning feature
+RUN apk add --no-cache git
+
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser

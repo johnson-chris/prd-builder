@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import type { AuthResponse, LoginCredentials, RegisterData, User, Prd, PrdListResponse, CreatePrdInput, UpdatePrdInput, ExtractedSection, TranscriptSSEEvent } from '@/types';
+import type { AuthResponse, LoginCredentials, RegisterData, User, Prd, PrdListResponse, CreatePrdInput, UpdatePrdInput, ExtractedSection, TranscriptSSEEvent, FilesSSEEvent, FileSource } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -173,6 +173,106 @@ export const transcriptApi = {
                       content: parsed.content,
                       confidence: parsed.confidence,
                       sourceQuotes: parsed.sourceQuotes,
+                      included: true,
+                    });
+                    break;
+                  case 'complete':
+                    callbacks.onComplete(parsed.suggestedTitle, parsed.analysisNotes);
+                    break;
+                  case 'error':
+                    callbacks.onError(new Error(parsed.message));
+                    break;
+                }
+              } catch { }
+            }
+          }
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          callbacks.onError(error as Error);
+        }
+      }
+    };
+    fetchSSE();
+    return () => controller.abort();
+  },
+};
+
+export interface FileExtractedSection {
+  sectionId: string;
+  sectionTitle: string;
+  content: string;
+  confidence: 'high' | 'medium' | 'low';
+  sourceFiles: FileSource[];
+  included: boolean;
+}
+
+export interface FilesAnalysisCallbacks {
+  onProgress: (stage: string, progress: number) => void;
+  onSection: (section: FileExtractedSection) => void;
+  onComplete: (suggestedTitle: string, analysisNotes: string) => void;
+  onError: (error: Error) => void;
+}
+
+export const filesApi = {
+  analyze: (
+    files: File[],
+    callbacks: FilesAnalysisCallbacks,
+    context?: string,
+    gitUrl?: string
+  ): (() => void) => {
+    const controller = new AbortController();
+    const fetchSSE = async (): Promise<void> => {
+      try {
+        // Build FormData for file upload
+        const formData = new FormData();
+        for (const file of files) {
+          formData.append('files', file);
+        }
+        if (context) {
+          formData.append('context', context);
+        }
+        if (gitUrl) {
+          formData.append('gitUrl', gitUrl);
+        }
+
+        const response = await fetch(`${API_URL}/api/files/analyze`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: formData,
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        }
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') return;
+              try {
+                const parsed = JSON.parse(data) as FilesSSEEvent;
+                switch (parsed.type) {
+                  case 'progress':
+                    callbacks.onProgress(parsed.stage, parsed.progress);
+                    break;
+                  case 'section':
+                    callbacks.onSection({
+                      sectionId: parsed.sectionId,
+                      sectionTitle: parsed.sectionTitle,
+                      content: parsed.content,
+                      confidence: parsed.confidence,
+                      sourceFiles: parsed.sourceFiles,
                       included: true,
                     });
                     break;

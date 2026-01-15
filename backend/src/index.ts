@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authRouter } from './routes/auth.js';
 import { prdsRouter } from './routes/prds.js';
 import { transcriptRouter } from './routes/transcript.js';
+import { filesRouter } from './routes/files.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/prds', prdsRouter);
 app.use('/api/transcript', transcriptRouter);
+app.use('/api/files', filesRouter);
 
 // Error handler
 app.use(errorHandler);

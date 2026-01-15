@@ -1,11 +1,17 @@
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
+export interface FileSource {
+  filename: string;
+  excerpt?: string;
+}
+
 export interface ExtractedSection {
   sectionId: string;
   sectionTitle: string;
   content: string;
   confidence: ConfidenceLevel;
-  sourceQuotes: string[];
+  sourceQuotes: string[];  // For transcripts
+  sourceFiles: FileSource[]; // For files
   included: boolean;
 }
 
@@ -18,5 +24,11 @@ export interface TranscriptAnalysisResult {
 export type TranscriptSSEEvent =
   | { type: 'progress'; stage: string; progress: number }
   | { type: 'section'; sectionId: string; sectionTitle: string; content: string; confidence: ConfidenceLevel; sourceQuotes: string[] }
+  | { type: 'complete'; suggestedTitle: string; analysisNotes: string }
+  | { type: 'error'; message: string };
+
+export type FilesSSEEvent =
+  | { type: 'progress'; stage: string; progress: number }
+  | { type: 'section'; sectionId: string; sectionTitle: string; content: string; confidence: ConfidenceLevel; sourceFiles: FileSource[] }
   | { type: 'complete'; suggestedTitle: string; analysisNotes: string }
   | { type: 'error'; message: string };
