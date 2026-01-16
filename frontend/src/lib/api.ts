@@ -210,6 +210,7 @@ export const transcriptApi = {
                       sectionTitle: parsed.sectionTitle,
                       content: parsed.content,
                       confidence: parsed.confidence,
+                      confidenceReason: parsed.confidenceReason,
                       sourceQuotes: parsed.sourceQuotes,
                       included: true,
                     });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ExtractedSection } from '@/types';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { SourceQuotes } from './SourceQuotes';
+import { ConfidenceReason } from './ConfidenceReason';
 
 interface ExtractionPreviewProps {
   sections: ExtractedSection[];
@@ -118,6 +119,11 @@ export function ExtractionPreview({
                   </h4>
                   <ConfidenceBadge level={section.confidence} />
                 </div>
+
+                {/* Confidence reason */}
+                {section.confidenceReason && (
+                  <ConfidenceReason reason={section.confidenceReason} />
+                )}
 
                 {/* Content preview */}
                 {section.content && (

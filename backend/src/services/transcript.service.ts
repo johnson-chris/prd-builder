@@ -15,6 +15,7 @@ export interface ExtractedSection {
   sectionTitle: string;
   content: string;
   confidence: ConfidenceLevel;
+  confidenceReason: string;
   sourceQuotes: string[];
 }
 
@@ -44,13 +45,15 @@ You MUST output valid JSON objects, one per line, for each section you process. 
 
 For each section, output a JSON object on its own line:
 
-{"type":"section","sectionId":"executive-summary","content":"Extracted content in markdown format","confidence":"high","sourceQuotes":["Direct quote from transcript"]}
+{"type":"section","sectionId":"executive-summary","content":"Extracted content in markdown format","confidence":"high","confidenceReason":"Brief explanation of why this confidence level was assigned","sourceQuotes":["Direct quote from transcript"]}
 
 ## Confidence Levels
 
 - **high**: Multiple clear, explicit mentions in transcript that directly address this section. The information is unambiguous.
 - **medium**: Some relevant information found, but may need user refinement or interpretation. Partial information available.
 - **low**: Limited or indirect information; content is largely inferred from context or templated. User should review and expand.
+
+For each confidence level, provide a brief "confidenceReason" (1-2 sentences) explaining what transcript evidence supports this rating, or what's missing.
 
 ## Guidelines
 
@@ -153,6 +156,7 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
                   sectionTitle,
                   content: parsed.content || '',
                   confidence: parsed.confidence || 'low',
+                  confidenceReason: parsed.confidenceReason || '',
                   sourceQuotes: parsed.sourceQuotes || [],
                 });
               } else if (parsed.type === 'complete') {
