@@ -113,6 +113,7 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
     let buffer = '';
     let sectionsProcessed = 0;
     const totalSections = 13;
+    let completionSent = false;
 
     for await (const event of stream) {
       if (event.type === 'content_block_delta') {
@@ -155,6 +156,7 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
                   sourceQuotes: parsed.sourceQuotes || [],
                 });
               } else if (parsed.type === 'complete') {
+                completionSent = true;
                 callbacks.onProgress('complete', 100);
                 callbacks.onComplete(
                   parsed.suggestedTitle || 'Untitled PRD',
@@ -175,6 +177,7 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
       try {
         const parsed = JSON.parse(buffer.trim());
         if (parsed.type === 'complete') {
+          completionSent = true;
           callbacks.onProgress('complete', 100);
           callbacks.onComplete(
             parsed.suggestedTitle || 'Untitled PRD',
@@ -184,6 +187,16 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
       } catch {
         console.log('Final buffer not valid JSON:', buffer.substring(0, 100));
       }
+    }
+
+    // Fallback: if stream ended without completion event, send one anyway
+    if (!completionSent) {
+      console.log('Stream ended without completion event, sending fallback completion');
+      callbacks.onProgress('complete', 100);
+      callbacks.onComplete(
+        'Untitled PRD',
+        `Analysis extracted ${sectionsProcessed} sections. Some content may need manual review.`
+      );
     }
 
     console.log('Transcript analysis completed, sections processed:', sectionsProcessed);

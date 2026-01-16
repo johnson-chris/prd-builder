@@ -17,6 +17,28 @@ export function setAccessToken(token: string | null): void { accessToken = token
 export function getAccessToken(): string | null { return accessToken; }
 export function setAuthFailureHandler(handler: () => void): void { onAuthFailure = handler; }
 
+// Helper to refresh token for SSE/fetch requests that don't use axios
+async function refreshTokenForSSE(): Promise<string | null> {
+  try {
+    if (!refreshPromise) {
+      refreshPromise = api.post<{ accessToken: string }>('/auth/refresh')
+        .then((response) => {
+          setAccessToken(response.data.accessToken);
+          return response.data.accessToken;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
+    }
+    return await refreshPromise;
+  } catch {
+    setAccessToken(null);
+    refreshPromise = null;
+    if (onAuthFailure) onAuthFailure();
+    return null;
+  }
+}
+
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
@@ -85,7 +107,7 @@ export const prdApi = {
 export const planningApi = {
   sendMessage: (prdId: string, sectionId: string, message: string, onChunk: (chunk: string) => void, onDone: () => void, onError: (error: Error) => void): (() => void) => {
     const controller = new AbortController();
-    const fetchSSE = async (): Promise<void> => {
+    const fetchSSE = async (retry = false): Promise<void> => {
       try {
         const response = await fetch(`${API_URL}/api/prds/${prdId}/sections/${sectionId}/plan/message`, {
           method: 'POST',
@@ -93,6 +115,14 @@ export const planningApi = {
           body: JSON.stringify({ message }),
           signal: controller.signal,
         });
+        // Handle 401 by refreshing token and retrying once
+        if (response.status === 401 && !retry) {
+          const newToken = await refreshTokenForSSE();
+          if (newToken) {
+            return fetchSSE(true);
+          }
+          throw new Error('Authentication failed. Please log in again.');
+        }
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No response body');
@@ -134,7 +164,7 @@ export const transcriptApi = {
     context?: string
   ): (() => void) => {
     const controller = new AbortController();
-    const fetchSSE = async (): Promise<void> => {
+    const fetchSSE = async (retry = false): Promise<void> => {
       try {
         const response = await fetch(`${API_URL}/api/transcript/analyze`, {
           method: 'POST',
@@ -142,6 +172,14 @@ export const transcriptApi = {
           body: JSON.stringify({ transcript, context: context || undefined }),
           signal: controller.signal,
         });
+        // Handle 401 by refreshing token and retrying once
+        if (response.status === 401 && !retry) {
+          const newToken = await refreshTokenForSSE();
+          if (newToken) {
+            return fetchSSE(true);
+          }
+          throw new Error('Authentication failed. Please log in again.');
+        }
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(errorText || `HTTP error! status: ${response.status}`);
@@ -222,7 +260,7 @@ export const filesApi = {
     gitUrl?: string
   ): (() => void) => {
     const controller = new AbortController();
-    const fetchSSE = async (): Promise<void> => {
+    const fetchSSE = async (retry = false): Promise<void> => {
       try {
         // Build FormData for file upload
         const formData = new FormData();
@@ -242,6 +280,14 @@ export const filesApi = {
           body: formData,
           signal: controller.signal,
         });
+        // Handle 401 by refreshing token and retrying once
+        if (response.status === 401 && !retry) {
+          const newToken = await refreshTokenForSSE();
+          if (newToken) {
+            return fetchSSE(true);
+          }
+          throw new Error('Authentication failed. Please log in again.');
+        }
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(errorText || `HTTP error! status: ${response.status}`);
