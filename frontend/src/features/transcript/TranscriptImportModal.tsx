@@ -21,6 +21,7 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
 
   const [step, setStep] = useState<Step>('input');
   const [transcript, setTranscript] = useState('');
+  const [context, setContext] = useState('');
   const [error, setError] = useState<string | undefined>();
 
   // Processing state
@@ -39,6 +40,7 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
     if (!isOpen) {
       setStep('input');
       setTranscript('');
+      setContext('');
       setError(undefined);
       setStage('analyzing');
       setProgress(0);
@@ -65,28 +67,32 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
     setProgress(0);
     setSections([]);
 
-    const abort = transcriptApi.analyze(transcript, {
-      onProgress: (s, p) => {
-        setStage(s);
-        setProgress(p);
+    const abort = transcriptApi.analyze(
+      transcript,
+      {
+        onProgress: (s, p) => {
+          setStage(s);
+          setProgress(p);
+        },
+        onSection: (section) => {
+          setSections((prev) => [...prev, section]);
+        },
+        onComplete: (title, notes) => {
+          setSuggestedTitle(title);
+          setAnalysisNotes(notes);
+          setStep('preview');
+        },
+        onError: (err) => {
+          console.error('Transcript analysis error:', err);
+          setError(err.message || 'Analysis failed. Please try again.');
+          setStep('input');
+        },
       },
-      onSection: (section) => {
-        setSections((prev) => [...prev, section]);
-      },
-      onComplete: (title, notes) => {
-        setSuggestedTitle(title);
-        setAnalysisNotes(notes);
-        setStep('preview');
-      },
-      onError: (err) => {
-        console.error('Transcript analysis error:', err);
-        setError(err.message || 'Analysis failed. Please try again.');
-        setStep('input');
-      },
-    });
+      context || undefined
+    );
 
     setAbortFn(() => abort);
-  }, [transcript]);
+  }, [transcript, context]);
 
   const handleCancel = useCallback(() => {
     if (abortFn) abortFn();
@@ -219,6 +225,8 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
               <TranscriptInput
                 value={transcript}
                 onChange={setTranscript}
+                context={context}
+                onContextChange={setContext}
                 error={error}
               />
               <div className="mt-6 flex justify-end">
