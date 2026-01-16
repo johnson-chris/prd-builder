@@ -142,9 +142,11 @@ For each section, output a JSON object on its own line:
 5. **Be specific**: Convert code patterns into concrete requirements
 6. **Process in order**: Output sections in order from 1 to 13
 
-After processing all 13 sections, output a final summary line:
+IMPORTANT: After processing all 13 sections, you MUST output a final completion line with a suggested title:
 
-{"type":"complete","suggestedTitle":"Suggested PRD Title Based on Project","analysisNotes":"Brief notes about file quality and any major gaps"}
+{"type":"complete","suggestedTitle":"[Project/Product Name] PRD","analysisNotes":"Brief notes about file quality and any major gaps"}
+
+The suggestedTitle should be descriptive and based on the project or product name found in the files.
 
 Begin analyzing now. Output only JSON lines, no other text.`;
 }
@@ -197,6 +199,8 @@ ${context.trim()}
     let buffer = '';
     let sectionsProcessed = 0;
     const totalSections = 13;
+    let completionSent = false;
+    let extractedSections: { sectionId: string; content: string }[] = [];
 
     callbacks.onProgress('analyzing', 10);
 
@@ -240,7 +244,11 @@ ${context.trim()}
                   confidence: parsed.confidence || 'low',
                   sourceFiles: parsed.sourceFiles || [],
                 });
+
+                // Track sections for fallback title generation
+                extractedSections.push({ sectionId: parsed.sectionId, content: parsed.content || '' });
               } else if (parsed.type === 'complete') {
+                completionSent = true;
                 callbacks.onProgress('complete', 100);
                 callbacks.onComplete(
                   parsed.suggestedTitle || 'Untitled PRD',
@@ -261,6 +269,7 @@ ${context.trim()}
       try {
         const parsed = JSON.parse(buffer.trim());
         if (parsed.type === 'complete') {
+          completionSent = true;
           callbacks.onProgress('complete', 100);
           callbacks.onComplete(
             parsed.suggestedTitle || 'Untitled PRD',
@@ -270,6 +279,38 @@ ${context.trim()}
       } catch {
         console.log('Final buffer not valid JSON:', buffer.substring(0, 100));
       }
+    }
+
+    // Fallback: if stream ended without completion event, send one anyway
+    if (!completionSent) {
+      console.log('Stream ended without completion event, sending fallback completion');
+
+      // Try to generate a title from the executive summary or problem statement
+      let fallbackTitle = 'Untitled PRD';
+      const execSummary = extractedSections.find(s => s.sectionId === 'executive-summary');
+      const problemStatement = extractedSections.find(s => s.sectionId === 'problem-statement');
+
+      if (execSummary?.content) {
+        // Try to extract a product/feature name from the first line or sentence
+        const firstLine = execSummary.content.split('\n')[0].replace(/^#+\s*/, '').trim();
+        if (firstLine && firstLine.length < 100) {
+          fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
+        }
+      } else if (problemStatement?.content) {
+        const firstLine = problemStatement.content.split('\n')[0].replace(/^#+\s*/, '').trim();
+        if (firstLine && firstLine.length < 100) {
+          fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
+        }
+      } else if (parsedFiles.length > 0) {
+        // Use the first filename as a fallback
+        fallbackTitle = `${parsedFiles[0].filename} Analysis`;
+      }
+
+      callbacks.onProgress('complete', 100);
+      callbacks.onComplete(
+        fallbackTitle,
+        `Analysis extracted ${sectionsProcessed} sections. Title was auto-generated - you may want to refine it.`
+      );
     }
 
     console.log('File analysis completed, sections processed:', sectionsProcessed);

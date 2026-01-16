@@ -64,9 +64,11 @@ For each confidence level, provide a brief "confidenceReason" (1-2 sentences) ex
 5. **Be specific**: Convert vague statements into concrete requirements where transcript supports it
 6. **Process in order**: Output sections in order from 1 to 13
 
-After processing all 13 sections, output a final summary line:
+IMPORTANT: After processing all 13 sections, you MUST output a final completion line with a suggested title:
 
-{"type":"complete","suggestedTitle":"Suggested PRD Title Based on Product","analysisNotes":"Brief notes about transcript quality and any major gaps"}
+{"type":"complete","suggestedTitle":"[Product/Feature Name] PRD","analysisNotes":"Brief notes about transcript quality and any major gaps"}
+
+The suggestedTitle should be descriptive and based on the product or feature discussed in the transcript.
 
 Begin analyzing now. Output only JSON lines, no other text.`;
 }
@@ -117,6 +119,7 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
     let sectionsProcessed = 0;
     const totalSections = 13;
     let completionSent = false;
+    let extractedSections: { sectionId: string; content: string }[] = [];
 
     for await (const event of stream) {
       if (event.type === 'content_block_delta') {
@@ -159,6 +162,9 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
                   confidenceReason: parsed.confidenceReason || '',
                   sourceQuotes: parsed.sourceQuotes || [],
                 });
+
+                // Track sections for fallback title generation
+                extractedSections.push({ sectionId: parsed.sectionId, content: parsed.content || '' });
               } else if (parsed.type === 'complete') {
                 completionSent = true;
                 callbacks.onProgress('complete', 100);
@@ -196,10 +202,29 @@ Analyze this transcript and extract content for each of the 13 PRD sections. Out
     // Fallback: if stream ended without completion event, send one anyway
     if (!completionSent) {
       console.log('Stream ended without completion event, sending fallback completion');
+
+      // Try to generate a title from the executive summary or problem statement
+      let fallbackTitle = 'Untitled PRD';
+      const execSummary = extractedSections.find(s => s.sectionId === 'executive-summary');
+      const problemStatement = extractedSections.find(s => s.sectionId === 'problem-statement');
+
+      if (execSummary?.content) {
+        // Try to extract a product/feature name from the first line or sentence
+        const firstLine = execSummary.content.split('\n')[0].replace(/^#+\s*/, '').trim();
+        if (firstLine && firstLine.length < 100) {
+          fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
+        }
+      } else if (problemStatement?.content) {
+        const firstLine = problemStatement.content.split('\n')[0].replace(/^#+\s*/, '').trim();
+        if (firstLine && firstLine.length < 100) {
+          fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
+        }
+      }
+
       callbacks.onProgress('complete', 100);
       callbacks.onComplete(
-        'Untitled PRD',
-        `Analysis extracted ${sectionsProcessed} sections. Some content may need manual review.`
+        fallbackTitle,
+        `Analysis extracted ${sectionsProcessed} sections. Title was auto-generated - you may want to refine it.`
       );
     }
 
