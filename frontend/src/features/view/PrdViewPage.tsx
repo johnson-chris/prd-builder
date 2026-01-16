@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePrdStore } from '@/stores/prdStore';
 import { Button, StatusBadge } from '@/components/ui';
 import { TableOfContents } from './components/TableOfContents';
+import { PrintTableOfContents } from './components/PrintTableOfContents';
 import { PrdSection } from './components/PrdSection';
 import { formatDate, slugify } from '@/lib/utils';
 
@@ -159,11 +160,14 @@ export function PrdViewPage(): JSX.Element {
           </div>
         </div>
 
-        {/* Table of Contents */}
+        {/* Interactive Table of Contents (hidden in print) */}
         <TableOfContents
           sections={sortedSections}
           onJumpToSection={handleJumpToSection}
         />
+
+        {/* Print-only Table of Contents */}
+        <PrintTableOfContents sections={sortedSections} />
 
         {/* Sections */}
         <div className="space-y-8">

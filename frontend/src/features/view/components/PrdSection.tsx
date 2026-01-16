@@ -30,7 +30,7 @@ export function PrdSection({ section }: PrdSectionProps): JSX.Element {
       <h2 className="prd-section-title text-xl font-semibold text-primary mb-4 flex items-center gap-2">
         {section.title}
         {section.required && (
-          <span className="text-xs font-normal text-error">Required</span>
+          <span className="text-xs font-normal text-error no-print">Required</span>
         )}
       </h2>
 
