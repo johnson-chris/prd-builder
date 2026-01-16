@@ -6,6 +6,7 @@ import { usePrdStore } from '@/stores/prdStore';
 import { FileUploadInput } from './components/FileUploadInput';
 import { ProcessingProgress } from '@/features/transcript/components/ProcessingProgress';
 import { ConfidenceBadge } from '@/features/transcript/components/ConfidenceBadge';
+import { ConfidenceReason } from '@/features/transcript/components/ConfidenceReason';
 
 interface FileImportModalProps {
   isOpen: boolean;
@@ -321,7 +322,10 @@ export function FileImportModal({ isOpen, onClose }: FileImportModalProps): JSX.
                           <h4 className="font-medium text-stone-900">{section.sectionTitle}</h4>
                           <ConfidenceBadge confidence={section.confidence} />
                         </div>
-                        <p className="text-sm text-stone-600 line-clamp-3">
+                        {section.confidenceReason && (
+                          <ConfidenceReason reason={section.confidenceReason} />
+                        )}
+                        <p className="text-sm text-stone-600 line-clamp-3 mt-2">
                           {section.content.replace(/<[^>]*>/g, '').substring(0, 200)}
                           {section.content.length > 200 && '...'}
                         </p>

@@ -30,6 +30,6 @@ export type TranscriptSSEEvent =
 
 export type FilesSSEEvent =
   | { type: 'progress'; stage: string; progress: number }
-  | { type: 'section'; sectionId: string; sectionTitle: string; content: string; confidence: ConfidenceLevel; sourceFiles: FileSource[] }
+  | { type: 'section'; sectionId: string; sectionTitle: string; content: string; confidence: ConfidenceLevel; confidenceReason?: string; sourceFiles: FileSource[] }
   | { type: 'complete'; suggestedTitle: string; analysisNotes: string }
   | { type: 'error'; message: string };

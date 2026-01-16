@@ -117,6 +117,7 @@ filesRouter.post(
                 sectionTitle: section.sectionTitle,
                 content: section.content,
                 confidence: section.confidence,
+                confidenceReason: section.confidenceReason,
                 sourceFiles: section.sourceFiles,
               })}\n\n`
             );

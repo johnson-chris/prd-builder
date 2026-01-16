@@ -24,6 +24,7 @@ export interface ExtractedSection {
   sectionTitle: string;
   content: string;
   confidence: ConfidenceLevel;
+  confidenceReason: string;
   sourceFiles: FileSource[];
 }
 
@@ -97,13 +98,15 @@ You MUST output valid JSON objects, one per line, for each section you process. 
 
 For each section, output a JSON object on its own line:
 
-{"type":"section","sectionId":"executive-summary","content":"Extracted content in markdown format","confidence":"high","sourceFiles":[{"filename":"app.js","excerpt":"relevant code snippet"}]}
+{"type":"section","sectionId":"executive-summary","content":"Extracted content in markdown format","confidence":"high","confidenceReason":"Brief explanation of why this confidence level was assigned","sourceFiles":[{"filename":"app.js","excerpt":"relevant code snippet"}]}
 
 ## Confidence Levels
 
 - **high**: Explicit documentation, clear code comments, or formal requirements found. The information is unambiguous.
 - **medium**: Inferred from code logic, structure, or naming conventions. May need user refinement.
 - **low**: Limited information; content is largely inferred or templated based on common patterns.
+
+For each confidence level, provide a brief "confidenceReason" (1-2 sentences) explaining what file evidence supports this rating, or what's missing.
 
 ## What to Extract from Each File Type
 
@@ -242,6 +245,7 @@ ${context.trim()}
                   sectionTitle,
                   content: parsed.content || '',
                   confidence: parsed.confidence || 'low',
+                  confidenceReason: parsed.confidenceReason || '',
                   sourceFiles: parsed.sourceFiles || [],
                 });
 

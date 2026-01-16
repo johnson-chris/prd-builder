@@ -319,6 +319,7 @@ export const filesApi = {
                       sectionTitle: parsed.sectionTitle,
                       content: parsed.content,
                       confidence: parsed.confidence,
+                      confidenceReason: parsed.confidenceReason,
                       sourceFiles: parsed.sourceFiles,
                       included: true,
                     });
