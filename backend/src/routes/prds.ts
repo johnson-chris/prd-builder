@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createPrdSchema, updatePrdSchema, planningMessageSchema } from '../lib/validation.js';
+import { createPrdSchema, updatePrdSchema, planningMessageSchema, formatForSectionSchema } from '../lib/validation.js';
 import {
   listPrds,
   getPrd,
@@ -9,7 +9,7 @@ import {
   updatePlanningConversation,
 } from '../services/prd.service.js';
 import { generateMarkdown } from '../services/markdown.service.js';
-import { streamPlanningResponse } from '../services/claude.service.js';
+import { streamPlanningResponse, formatForSection } from '../services/claude.service.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { planningRateLimiter } from '../middleware/rateLimiter.js';
 import { getUserById } from '../services/auth.service.js';
@@ -157,7 +157,53 @@ prdsRouter.post(
             res.end();
           },
         },
-        { includeTeamContext: input.includeTeamContext }
+        { includeTeamContext: input.includeTeamContext, allSections: prd.sections }
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Format conversation for section (smart apply)
+prdsRouter.post(
+  '/:id/sections/:sectionId/plan/format',
+  planningRateLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Format endpoint hit:', req.params.id, req.params.sectionId);
+    try {
+      const input = formatForSectionSchema.parse(req.body);
+      const prd = await getPrd(req.params.id, req.user!.userId);
+
+      const section = prd.sections.find((s: Section) => s.id === req.params.sectionId);
+      if (!section) {
+        res.status(404).json({ error: 'Section not found', code: 'SECTION_NOT_FOUND' });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      await formatForSection(
+        section,
+        input.messages,
+        {
+          onChunk: (chunk) => {
+            res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+          },
+          onDone: () => {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          },
+          onError: (error) => {
+            console.error('Format stream error:', error);
+            res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+            res.end();
+          },
+        },
+        { mode: input.mode, existingContent: section.content }
       );
     } catch (error) {
       next(error);

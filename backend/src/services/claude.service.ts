@@ -38,7 +38,29 @@ const SECTION_PROMPTS: Record<string, string> = {
     'Is there any additional information, references, or supporting materials that should be included in the appendices?',
 };
 
-function getSystemPrompt(section: Section, prdTitle: string, skillContext?: string): string {
+function formatSectionContent(section: Section): string {
+  const content = section.content?.replace(/<[^>]*>/g, '').trim();
+  if (!content) return '(empty)';
+  // Truncate very long content to avoid token limits
+  return content.length > 500 ? content.substring(0, 500) + '...' : content;
+}
+
+function buildPrdContext(allSections: Section[], currentSectionId: string): string {
+  const otherSections = allSections.filter(s => s.id !== currentSectionId && s.content?.replace(/<[^>]*>/g, '').trim());
+
+  if (otherSections.length === 0) return '';
+
+  let context = '\n\n## Other PRD Sections (for reference)\n';
+  context += 'Use this context to ensure consistency and avoid redundancy across sections:\n\n';
+
+  for (const s of otherSections) {
+    context += `### ${s.title}\n${formatSectionContent(s)}\n\n`;
+  }
+
+  return context;
+}
+
+function getSystemPrompt(section: Section, prdTitle: string, allSections?: Section[], skillContext?: string): string {
   const currentContent = section.content?.replace(/<[^>]*>/g, '').trim();
   const hasContent = currentContent && currentContent.length > 0;
 
@@ -61,7 +83,13 @@ Guidelines:
 5. Structure your suggestions in markdown format ready to paste
 6. If the user seems stuck, offer examples or templates
 7. Keep responses concise and actionable
-8. Reference and build upon the current content if it exists`;
+8. Reference and build upon the current content if it exists
+9. Consider how this section relates to other sections in the PRD`;
+
+  // Add context from other sections
+  if (allSections && allSections.length > 0) {
+    prompt += buildPrdContext(allSections, section.id);
+  }
 
   if (skillContext) {
     prompt += `\n\n## Team Reference Information\nThe following is reference information about the development team, technology stack, and project ownership. Use this to provide context-aware suggestions about technologies, team contacts, and existing systems.\n\n${skillContext}`;
@@ -78,6 +106,7 @@ export interface StreamCallbacks {
 
 export interface StreamOptions {
   includeTeamContext?: boolean;
+  allSections?: Section[];
 }
 
 export async function streamPlanningResponse(
@@ -97,7 +126,7 @@ export async function streamPlanningResponse(
     console.log('Team context loaded:', skillContext ? 'yes' : 'no');
   }
 
-  const systemPrompt = getSystemPrompt(section, prdTitle, skillContext);
+  const systemPrompt = getSystemPrompt(section, prdTitle, options?.allSections, skillContext);
 
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
@@ -132,6 +161,83 @@ export async function streamPlanningResponse(
     callbacks.onDone();
   } catch (error) {
     console.error('Claude API error:', error);
+    callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
+  }
+}
+
+export interface FormatOptions {
+  mode: 'replace' | 'merge';
+  existingContent?: string;
+}
+
+export async function formatForSection(
+  section: Section,
+  conversationMessages: { role: 'user' | 'assistant'; content: string }[],
+  callbacks: StreamCallbacks,
+  options?: FormatOptions
+): Promise<void> {
+  console.log('formatForSection called:', { sectionId: section.id, mode: options?.mode });
+
+  const conversationText = conversationMessages
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+    .join('\n\n');
+
+  const mode = options?.mode || 'replace';
+  const existingContent = options?.existingContent?.replace(/<[^>]*>/g, '').trim();
+
+  let systemPrompt = `You are an expert technical writer formatting content for a PRD (Product Requirements Document) section.
+
+Your task is to extract and format the valuable information from a planning conversation into clean, professional PRD content.
+
+Section: "${section.title}"
+Section description: ${section.description}
+
+${mode === 'merge' && existingContent ? `Existing section content to merge with:
+"""
+${existingContent}
+"""
+
+Merge the new information with the existing content, avoiding duplication and maintaining consistency.` : ''}
+
+IMPORTANT FORMATTING RULES:
+1. Remove ALL conversational elements (questions, "I think", "Let me", "Sure", etc.)
+2. Remove meta-commentary about the document itself
+3. Extract only the substantive content and decisions
+4. Format as professional PRD content using markdown:
+   - Use headers (##, ###) to organize subsections
+   - Use bullet points for lists
+   - Use bold for emphasis on key terms
+   - Use tables where appropriate for structured data
+5. Be concise but comprehensive
+6. Use third person, professional tone
+7. Include specific details, metrics, and requirements mentioned
+8. Structure logically for the "${section.title}" section
+
+Output ONLY the formatted section content, ready to paste into the PRD. Do not include any preamble or explanation.`;
+
+  const userPrompt = `Format the following planning conversation into clean PRD content for the "${section.title}" section:\n\n${conversationText}`;
+
+  try {
+    const stream = await client.messages.stream({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta') {
+        const delta = event.delta;
+        if ('text' in delta) {
+          callbacks.onChunk(delta.text);
+        }
+      }
+    }
+
+    console.log('Format stream completed successfully');
+    callbacks.onDone();
+  } catch (error) {
+    console.error('Claude API error in formatForSection:', error);
     callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
   }
 }

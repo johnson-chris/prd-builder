@@ -108,6 +108,11 @@ export interface PlanningOptions {
   includeTeamContext?: boolean;
 }
 
+export interface FormatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export const planningApi = {
   sendMessage: (prdId: string, sectionId: string, message: string, onChunk: (chunk: string) => void, onDone: () => void, onError: (error: Error) => void, options?: PlanningOptions): (() => void) => {
     const controller = new AbortController();
@@ -125,6 +130,55 @@ export const planningApi = {
           if (newToken) {
             return fetchSSE(true);
           }
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') { onDone(); return; }
+              try { const parsed = JSON.parse(data) as { content?: string }; if (parsed.content) onChunk(parsed.content); } catch { }
+            }
+          }
+        }
+        onDone();
+      } catch (error) { if ((error as Error).name !== 'AbortError') onError(error as Error); }
+    };
+    fetchSSE();
+    return () => controller.abort();
+  },
+
+  formatForSection: (
+    prdId: string,
+    sectionId: string,
+    messages: FormatMessage[],
+    mode: 'replace' | 'merge',
+    onChunk: (chunk: string) => void,
+    onDone: () => void,
+    onError: (error: Error) => void
+  ): (() => void) => {
+    const controller = new AbortController();
+    const fetchSSE = async (retry = false): Promise<void> => {
+      try {
+        const response = await fetch(`${API_URL}/api/prds/${prdId}/sections/${sectionId}/plan/format`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ messages, mode }),
+          signal: controller.signal,
+        });
+        if (response.status === 401 && !retry) {
+          const newToken = await refreshTokenForSSE();
+          if (newToken) return fetchSSE(true);
           throw new Error('Authentication failed. Please log in again.');
         }
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

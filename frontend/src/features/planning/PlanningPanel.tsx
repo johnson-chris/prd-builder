@@ -16,12 +16,18 @@ interface PlanningPanelProps {
   onApplySuggestion: (content: string) => void;
 }
 
+type ApplyMode = 'replace' | 'merge';
+
 export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections: _allSections, onClose, onApplySuggestion }: PlanningPanelProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
   const [includeTeamContext, setIncludeTeamContext] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyMode, setApplyMode] = useState<ApplyMode>('replace');
+  const [formattedContent, setFormattedContent] = useState('');
+  const [isFormatting, setIsFormatting] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,11 +72,47 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
     );
   };
 
-  const handleApply = (content: string): void => {
-    const codeBlockMatch = content.match(/```(?:html)?\n?([\s\S]*?)```/);
-    let cleanContent = codeBlockMatch ? codeBlockMatch[1].trim() : content;
-    cleanContent = markdownToHtml(cleanContent);
-    onApplySuggestion(cleanContent);
+  const handleApplyClick = (): void => {
+    setShowApplyModal(true);
+    setFormattedContent('');
+  };
+
+  const handleFormatAndApply = (mode: ApplyMode): void => {
+    setApplyMode(mode);
+    setIsFormatting(true);
+    setFormattedContent('');
+
+    let content = '';
+    planningApi.formatForSection(
+      prdId,
+      section.id,
+      messages,
+      mode,
+      (chunk) => {
+        content += chunk;
+        setFormattedContent(content);
+      },
+      () => {
+        setIsFormatting(false);
+      },
+      (error) => {
+        console.error('Format error:', error);
+        setIsFormatting(false);
+        setFormattedContent('Error formatting content. Please try again.');
+      }
+    );
+  };
+
+  const handleConfirmApply = (): void => {
+    const htmlContent = markdownToHtml(formattedContent);
+    onApplySuggestion(htmlContent);
+    setShowApplyModal(false);
+    setFormattedContent('');
+  };
+
+  const handleCancelApply = (): void => {
+    setShowApplyModal(false);
+    setFormattedContent('');
   };
 
   const markdownToHtml = (md: string): string => {
@@ -163,16 +205,10 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
               }`}
             >
               <div className="whitespace-pre-wrap">{msg.content}</div>
-              {msg.role === 'assistant' && (
-                <button
-                  onClick={() => handleApply(msg.content)}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-medium text-stone-500 hover:text-stone-900 transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Apply to section
-                </button>
+              {msg.role === 'assistant' && messages.length > 0 && (
+                <div className="mt-3 text-xs text-stone-400">
+                  Use the "Summarize & Apply" button below to apply conversation insights
+                </div>
               )}
             </div>
           </div>
@@ -217,16 +253,121 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
             )}
           </button>
         </div>
-        <label className="mt-2 flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={includeTeamContext}
-            onChange={(e) => setIncludeTeamContext(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-stone-300 text-stone-900 focus:ring-stone-500"
-          />
-          Include team context
-        </label>
+        <div className="mt-2 flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeTeamContext}
+              onChange={(e) => setIncludeTeamContext(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+            />
+            Include team context
+          </label>
+          {messages.length > 0 && (
+            <button
+              onClick={handleApplyClick}
+              disabled={streaming}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Summarize & Apply
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Apply Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
+          <div className="mx-4 w-full max-w-2xl rounded-2xl bg-white shadow-xl animate-fade-in-up max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
+              <div>
+                <h3 className="font-semibold text-stone-900">Apply to Section</h3>
+                <p className="text-xs text-stone-500 mt-0.5">{section.title}</p>
+              </div>
+              <button
+                onClick={handleCancelApply}
+                className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mode Selection */}
+            {!formattedContent && !isFormatting && (
+              <div className="p-6">
+                <p className="text-sm text-stone-600 mb-4">
+                  How would you like to apply the conversation insights to this section?
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleFormatAndApply('replace')}
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-stone-200 p-4 text-center transition-all hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <svg className="h-6 w-6 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    <span className="font-medium text-stone-900">Replace</span>
+                    <span className="text-xs text-stone-500">Replace current content with new summary</span>
+                  </button>
+                  <button
+                    onClick={() => handleFormatAndApply('merge')}
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-stone-200 p-4 text-center transition-all hover:border-stone-400 hover:bg-stone-50"
+                  >
+                    <svg className="h-6 w-6 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span className="font-medium text-stone-900">Merge</span>
+                    <span className="text-xs text-stone-500">Combine with existing content</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Formatting/Preview */}
+            {(isFormatting || formattedContent) && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="px-6 py-3 border-b border-stone-100 bg-stone-50">
+                  <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">
+                    {isFormatting ? 'Formatting...' : 'Preview'}
+                  </span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="prose prose-sm prose-stone max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans bg-transparent p-0 m-0">
+                      {formattedContent}
+                      {isFormatting && <span className="inline-block h-4 w-1 animate-pulse bg-stone-900 ml-1" />}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            {formattedContent && !isFormatting && (
+              <div className="flex items-center justify-end gap-3 border-t border-stone-100 px-6 py-4">
+                <button
+                  onClick={handleCancelApply}
+                  className="rounded-xl border-2 border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition-all hover:border-stone-300 hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmApply}
+                  className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-stone-800"
+                >
+                  Apply to Section
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

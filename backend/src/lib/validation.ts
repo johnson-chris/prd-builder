@@ -43,6 +43,14 @@ export const planningMessageSchema = z.object({
   includeTeamContext: z.boolean().optional().default(false),
 });
 
+export const formatForSectionSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string(),
+  })).min(1, 'At least one message is required'),
+  mode: z.enum(['replace', 'merge']).optional().default('replace'),
+});
+
 export const analyzeTranscriptSchema = z.object({
   transcript: z
     .string()
