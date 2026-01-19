@@ -13,12 +13,12 @@ interface PlanningPanelProps {
   prdTitle: string;
   allSections: PrdSection[];
   onClose: () => void;
-  onApplySuggestion: (content: string) => void;
+  onApplySuggestion: (content: string, sectionId: string) => void;
 }
 
 type ApplyMode = 'replace' | 'merge';
 
-export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections: _allSections, onClose, onApplySuggestion }: PlanningPanelProps): JSX.Element {
+export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections, onClose, onApplySuggestion }: PlanningPanelProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -28,7 +28,10 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
   const [applyMode, setApplyMode] = useState<ApplyMode>('replace');
   const [formattedContent, setFormattedContent] = useState('');
   const [isFormatting, setIsFormatting] = useState(false);
+  const [targetSectionId, setTargetSectionId] = useState(section.id);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  const targetSection = allSections.find(s => s.id === targetSectionId) || section;
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -75,6 +78,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
   const handleApplyClick = (): void => {
     setShowApplyModal(true);
     setFormattedContent('');
+    setTargetSectionId(section.id); // Reset to current section
   };
 
   const handleFormatAndApply = (mode: ApplyMode): void => {
@@ -85,7 +89,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
     let content = '';
     planningApi.formatForSection(
       prdId,
-      section.id,
+      targetSectionId,
       messages,
       mode,
       (chunk) => {
@@ -105,7 +109,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
 
   const handleConfirmApply = (): void => {
     const htmlContent = markdownToHtml(formattedContent);
-    onApplySuggestion(htmlContent);
+    onApplySuggestion(htmlContent, targetSectionId);
     setShowApplyModal(false);
     setFormattedContent('');
   };
@@ -113,6 +117,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
   const handleCancelApply = (): void => {
     setShowApplyModal(false);
     setFormattedContent('');
+    setTargetSectionId(section.id);
   };
 
   const markdownToHtml = (md: string): string => {
@@ -286,7 +291,9 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
             <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4">
               <div>
                 <h3 className="font-semibold text-stone-900">Apply to Section</h3>
-                <p className="text-xs text-stone-500 mt-0.5">{section.title}</p>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  {formattedContent || isFormatting ? targetSection.title : `From: ${section.title}`}
+                </p>
               </div>
               <button
                 onClick={handleCancelApply}
@@ -298,11 +305,37 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
               </button>
             </div>
 
-            {/* Mode Selection */}
+            {/* Section Selection and Mode */}
             {!formattedContent && !isFormatting && (
               <div className="p-6">
+                {/* Section Selector */}
+                <div className="mb-5">
+                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                    Apply to section
+                  </label>
+                  <select
+                    value={targetSectionId}
+                    onChange={(e) => setTargetSectionId(e.target.value)}
+                    className="w-full rounded-xl border-2 border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-stone-400 focus:outline-none transition-colors appearance-none cursor-pointer"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a8a29e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '20px',
+                      paddingRight: '40px'
+                    }}
+                  >
+                    {allSections.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title} {s.id === section.id ? '(current)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Mode Selection */}
                 <p className="text-sm text-stone-600 mb-4">
-                  How would you like to apply the conversation insights to this section?
+                  How would you like to apply the conversation insights?
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <button

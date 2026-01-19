@@ -274,8 +274,11 @@ export function EditorPage(): JSX.Element {
           prdTitle={title}
           allSections={sections}
           onClose={() => setPlanningSection(null)}
-          onApplySuggestion={(content) => {
-            handleSectionChange(planningSection, content);
+          onApplySuggestion={(content, sectionId) => {
+            const sectionIndex = sections.findIndex(s => s.id === sectionId);
+            if (sectionIndex !== -1) {
+              handleSectionChange(sectionIndex, content);
+            }
             setPlanningSection(null);
           }}
         />
