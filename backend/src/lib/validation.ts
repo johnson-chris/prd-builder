@@ -40,6 +40,7 @@ export const updatePrdSchema = z.object({
 
 export const planningMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(5000, 'Message too long'),
+  includeTeamContext: z.boolean().optional().default(false),
 });
 
 export const analyzeTranscriptSchema = z.object({

@@ -48,5 +48,8 @@ postgres_dev_data/
 *.tsbuildinfo
 .eslintcache
 
+# Private team data (contains contact info)
+backend/src/data/skills/
+
 # Old monorepo structure (migrated to Docker structure)
 prd-builder/

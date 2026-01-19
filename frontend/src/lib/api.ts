@@ -104,15 +104,19 @@ export const prdApi = {
   download: async (id: string): Promise<Blob> => (await api.get(`/prds/${id}/download`, { responseType: 'blob' })).data as Blob,
 };
 
+export interface PlanningOptions {
+  includeTeamContext?: boolean;
+}
+
 export const planningApi = {
-  sendMessage: (prdId: string, sectionId: string, message: string, onChunk: (chunk: string) => void, onDone: () => void, onError: (error: Error) => void): (() => void) => {
+  sendMessage: (prdId: string, sectionId: string, message: string, onChunk: (chunk: string) => void, onDone: () => void, onError: (error: Error) => void, options?: PlanningOptions): (() => void) => {
     const controller = new AbortController();
     const fetchSSE = async (retry = false): Promise<void> => {
       try {
         const response = await fetch(`${API_URL}/api/prds/${prdId}/sections/${sectionId}/plan/message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, includeTeamContext: options?.includeTeamContext }),
           signal: controller.signal,
         });
         // Handle 401 by refreshing token and retrying once

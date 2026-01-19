@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Section } from '../types/index.js';
+import { getTeamContext } from './skills.service.js';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -37,11 +38,11 @@ const SECTION_PROMPTS: Record<string, string> = {
     'Is there any additional information, references, or supporting materials that should be included in the appendices?',
 };
 
-function getSystemPrompt(section: Section, prdTitle: string): string {
+function getSystemPrompt(section: Section, prdTitle: string, skillContext?: string): string {
   const currentContent = section.content?.replace(/<[^>]*>/g, '').trim();
   const hasContent = currentContent && currentContent.length > 0;
 
-  return `You are an expert product manager helping a business analyst create a comprehensive Product Requirements Document (PRD). Your role is to ask clarifying questions, suggest content, and help think through requirements systematically.
+  let prompt = `You are an expert product manager helping a business analyst create a comprehensive Product Requirements Document (PRD). Your role is to ask clarifying questions, suggest content, and help think through requirements systematically.
 
 Context: The user is working on the "${section.title}" section of their PRD for a project titled "${prdTitle}".
 
@@ -61,6 +62,12 @@ Guidelines:
 6. If the user seems stuck, offer examples or templates
 7. Keep responses concise and actionable
 8. Reference and build upon the current content if it exists`;
+
+  if (skillContext) {
+    prompt += `\n\n## Team Reference Information\nThe following is reference information about the development team, technology stack, and project ownership. Use this to provide context-aware suggestions about technologies, team contacts, and existing systems.\n\n${skillContext}`;
+  }
+
+  return prompt;
 }
 
 export interface StreamCallbacks {
@@ -69,17 +76,28 @@ export interface StreamCallbacks {
   onError: (error: Error) => void;
 }
 
+export interface StreamOptions {
+  includeTeamContext?: boolean;
+}
+
 export async function streamPlanningResponse(
   section: Section,
   prdTitle: string,
   userMessage: string,
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  options?: StreamOptions
 ): Promise<void> {
-  console.log('streamPlanningResponse called:', { sectionId: section.id, prdTitle, userMessage });
+  console.log('streamPlanningResponse called:', { sectionId: section.id, prdTitle, userMessage, includeTeamContext: options?.includeTeamContext });
   console.log('Using model:', MODEL, 'API key length:', process.env.ANTHROPIC_API_KEY?.length || 0);
 
-  const systemPrompt = getSystemPrompt(section, prdTitle);
+  let skillContext: string | undefined;
+  if (options?.includeTeamContext) {
+    skillContext = getTeamContext() || undefined;
+    console.log('Team context loaded:', skillContext ? 'yes' : 'no');
+  }
+
+  const systemPrompt = getSystemPrompt(section, prdTitle, skillContext);
 
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 

@@ -156,7 +156,8 @@ prdsRouter.post(
             res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
             res.end();
           },
-        }
+        },
+        { includeTeamContext: input.includeTeamContext }
       );
     } catch (error) {
       next(error);

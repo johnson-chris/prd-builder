@@ -16,11 +16,12 @@ interface PlanningPanelProps {
   onApplySuggestion: (content: string) => void;
 }
 
-export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, onApplySuggestion }: PlanningPanelProps): JSX.Element {
+export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections: _allSections, onClose, onApplySuggestion }: PlanningPanelProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
+  const [includeTeamContext, setIncludeTeamContext] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,7 +61,8 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
           { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
         ]);
         setStreaming(false);
-      }
+      },
+      { includeTeamContext }
     );
   };
 
@@ -215,6 +217,15 @@ export function PlanningPanel({ prdId, section, prdTitle, allSections, onClose, 
             )}
           </button>
         </div>
+        <label className="mt-2 flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeTeamContext}
+            onChange={(e) => setIncludeTeamContext(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+          />
+          Include team context
+        </label>
       </div>
     </div>
   );

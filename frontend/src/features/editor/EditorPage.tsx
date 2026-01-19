@@ -26,15 +26,29 @@ export function EditorPage(): JSX.Element {
   const [activeSection, setActiveSection] = useState<number | null>(0);
   const [planningSection, setPlanningSection] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<{ title: string; sections: PrdSection[] } | null>(null);
 
   useEffect(() => {
     if (isNew) {
+      // Always reset to defaults first when navigating to new
+      setTitle('');
+      setStatus('draft');
+      setSections(createDefaultSections());
+      setActiveSection(0);
+      setPlanningSection(null);
+
+      // Check for existing draft
       const draft = loadDraft();
-      if (draft) {
-        setTitle(draft.title);
-        setSections(draft.sections);
+      if (draft && (draft.title || draft.sections.some(s => s.content))) {
+        // There's a draft with content - ask user what to do
+        setPendingDraft(draft);
+        setShowDraftPrompt(true);
       }
     } else if (id) {
+      // Reset prompt state when loading existing PRD
+      setShowDraftPrompt(false);
+      setPendingDraft(null);
       fetchPrd(id);
     }
   }, [id, isNew, fetchPrd]);
@@ -105,6 +119,21 @@ export function EditorPage(): JSX.Element {
     } catch (err) {
       console.error('Export failed:', err);
     }
+  };
+
+  const handleContinueDraft = (): void => {
+    if (pendingDraft) {
+      setTitle(pendingDraft.title);
+      setSections(pendingDraft.sections);
+    }
+    setShowDraftPrompt(false);
+    setPendingDraft(null);
+  };
+
+  const handleDiscardDraft = (): void => {
+    clearDraft();
+    setShowDraftPrompt(false);
+    setPendingDraft(null);
   };
 
   const completeness = calculateCompleteness(sections);
@@ -250,6 +279,44 @@ export function EditorPage(): JSX.Element {
             setPlanningSection(null);
           }}
         />
+      )}
+
+      {/* Draft Recovery Prompt */}
+      {showDraftPrompt && pendingDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-fade-in-up">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-stone-900">Unsaved Draft Found</h3>
+                <p className="text-sm text-stone-500">
+                  {pendingDraft.title ? `"${pendingDraft.title}"` : 'An untitled draft'}
+                </p>
+              </div>
+            </div>
+            <p className="mb-6 text-sm text-stone-600">
+              You have an unsaved draft from a previous session. Would you like to continue working on it or start fresh?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDiscardDraft}
+                className="flex-1 rounded-xl border-2 border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 transition-all hover:border-stone-300 hover:bg-stone-50"
+              >
+                Start Fresh
+              </button>
+              <button
+                onClick={handleContinueDraft}
+                className="flex-1 rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-stone-800"
+              >
+                Continue Draft
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
