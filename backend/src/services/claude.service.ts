@@ -212,6 +212,11 @@ IMPORTANT FORMATTING RULES:
 6. Use third person, professional tone
 7. Include specific details, metrics, and requirements mentioned
 8. Structure logically for the "${section.title}" section
+9. CRITICAL: Ensure proper line breaks between all elements:
+   - Always put a blank line before headers (##, ###)
+   - Always put a blank line before bullet lists
+   - Always put a blank line after paragraphs
+   - Never concatenate headers or sections on the same line
 
 Output ONLY the formatted section content, ready to paste into the PRD. Do not include any preamble or explanation.`;
 
