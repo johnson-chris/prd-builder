@@ -29,6 +29,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
   const [formattedContent, setFormattedContent] = useState('');
   const [isFormatting, setIsFormatting] = useState(false);
   const [targetSectionId, setTargetSectionId] = useState(section.id);
+  const [error, setError] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const targetSection = allSections.find(s => s.id === targetSectionId) || section;
@@ -50,6 +51,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
 
     let fullResponse = '';
 
+    setError(null);
     planningApi.sendMessage(
       prdId,
       section.id,
@@ -63,12 +65,12 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
         setCurrentResponse('');
         setStreaming(false);
       },
-      (error) => {
-        console.error('Planning API error:', error);
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
-        ]);
+      (err) => {
+        console.error('Planning API error:', err);
+        const errorMessage = err.message?.includes('401') || err.message?.includes('Authentication')
+          ? 'Session expired. Please refresh the page.'
+          : 'Unable to connect. Please check your connection and try again.';
+        setError(errorMessage);
         setStreaming(false);
       },
       { includeTeamContext }
@@ -85,6 +87,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
     setApplyMode(mode);
     setIsFormatting(true);
     setFormattedContent('');
+    setError(null);
 
     let content = '';
     planningApi.formatForSection(
@@ -99,10 +102,13 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
       () => {
         setIsFormatting(false);
       },
-      (error) => {
-        console.error('Format error:', error);
+      (err) => {
+        console.error('Format error:', err);
         setIsFormatting(false);
-        setFormattedContent('Error formatting content. Please try again.');
+        const errorMessage = err.message?.includes('401') || err.message?.includes('Authentication')
+          ? 'Session expired. Please refresh the page.'
+          : 'Unable to format content. Please try again.';
+        setError(errorMessage);
       }
     );
   };
@@ -118,6 +124,7 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
     setShowApplyModal(false);
     setFormattedContent('');
     setTargetSectionId(section.id);
+    setError(null);
   };
 
   const markdownToHtml = (md: string): string => {
@@ -182,6 +189,21 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
           </svg>
         </button>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="mx-4 mt-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-600 transition-colors"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={messagesContainerRef} className="h-96 overflow-y-auto p-5">
@@ -305,8 +327,23 @@ export function PlanningPanel({ prdId, section, prdTitle: _prdTitle, allSections
               </button>
             </div>
 
+            {/* Error in Modal */}
+            {error && showApplyModal && (
+              <div className="mx-6 mt-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 flex items-center justify-between">
+                <p className="text-sm text-red-700">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 hover:text-red-600 transition-colors"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
             {/* Section Selection and Mode */}
-            {!formattedContent && !isFormatting && (
+            {!formattedContent && !isFormatting && !error && (
               <div className="p-6">
                 {/* Section Selector */}
                 <div className="mb-5">
