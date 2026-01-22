@@ -196,25 +196,27 @@ So that I can quickly bootstrap a PRD from stakeholder discussions
 
 ## Functional Requirements
 
-### FR-001: User Authentication and Session Management
+### FR-001: User Authentication and Session Management [IMPLEMENTED]
 - **Priority**: P0 (Must Have)
 - **Description**: Basic authentication to associate PRDs with users
+- **Implementation Status**: ✅ Complete (password reset pending)
 - **Requirements**:
-  - Email/password authentication
-  - Session persistence across browser sessions
-  - Password reset functionality
-  - Remember me option
+  - ✅ Email/password authentication
+  - ✅ Session persistence across browser sessions
+  - ⏳ Password reset functionality (not yet implemented)
+  - ✅ Remember me option
 
-### FR-002: PRD Form Interface
+### FR-002: PRD Form Interface [IMPLEMENTED]
 - **Priority**: P0 (Must Have)
 - **Description**: Multi-section form for PRD creation
+- **Implementation Status**: ✅ Complete
 - **Requirements**:
-  - Progressive disclosure of sections (accordion or stepper UI)
-  - Required field validation
-  - Character count for text areas
-  - Auto-save every 60 seconds
-  - Manual save button always visible
-  - Section completion indicators
+  - ✅ Progressive disclosure of sections (accordion UI)
+  - ✅ Required field validation (Zod schemas)
+  - ✅ Character count for text areas
+  - ✅ Auto-save every 60 seconds
+  - ✅ Manual save button always visible
+  - ✅ Section completion indicators
 
 **Required PRD Sections:**
 1. Executive Summary
@@ -231,33 +233,35 @@ So that I can quickly bootstrap a PRD from stakeholder discussions
 12. Success Criteria
 13. Appendices
 
-### FR-003: Claude Integration - Planning Mode
+### FR-003: Claude Integration - Planning Mode [IMPLEMENTED]
 - **Priority**: P0 (Must Have)
 - **Description**: Interactive planning assistance using Claude API
+- **Implementation Status**: ✅ Complete
 - **Requirements**:
-  - "Enable Planning" button for each section
-  - Streaming responses from Claude for better UX
-  - Conversation history maintained within each section
-  - Ability to ask follow-up questions
-  - "Apply Suggestion" button to insert Claude's content
-  - "Regenerate" option if suggestion doesn't fit
-  - Planning conversation saved with PRD metadata
+  - ✅ "Enable Planning" button for each section
+  - ✅ Streaming responses from Claude for better UX (SSE)
+  - ✅ Conversation history maintained within each section
+  - ✅ Ability to ask follow-up questions
+  - ✅ "Apply Suggestion" button to insert Claude's content
+  - ✅ "Regenerate" option if suggestion doesn't fit
+  - ✅ Planning conversation saved with PRD metadata
 
 **Planning Mode Prompts** (examples):
 - Executive Summary: "I'll help you craft a compelling executive summary. What is the core problem your product solves, and for whom?"
 - User Stories: "Let's develop user stories. Can you describe the main user workflows and what users need to accomplish?"
 - Technical Requirements: "Let's think through technical requirements. What technologies are you considering, and what are your key constraints?"
 
-### FR-004: Markdown Generation and Storage
+### FR-004: Markdown Generation and Storage [IMPLEMENTED]
 - **Priority**: P0 (Must Have)
 - **Description**: Convert form data to structured markdown
+- **Implementation Status**: ✅ Complete
 - **Requirements**:
-  - Real-time markdown preview available
-  - Consistent heading hierarchy (H1 for title, H2 for major sections, H3 for subsections)
-  - Proper markdown formatting (lists, tables, code blocks)
-  - Metadata frontmatter (YAML format)
-  - UTF-8 encoding
-  - Line breaks and spacing for readability
+  - ✅ Real-time markdown preview available
+  - ✅ Consistent heading hierarchy (H1 for title, H2 for major sections, H3 for subsections)
+  - ✅ Proper markdown formatting (lists, tables, code blocks)
+  - ✅ Metadata frontmatter (YAML format)
+  - ✅ UTF-8 encoding
+  - ✅ Line breaks and spacing for readability
 
 **Metadata Format:**
 ```yaml
@@ -271,101 +275,109 @@ version: [Semantic Version]
 ---
 ```
 
-### FR-005: PRD Dashboard
+### FR-005: PRD Dashboard [PARTIAL]
 - **Priority**: P0 (Must Have)
 - **Description**: Central view of all user PRDs
+- **Implementation Status**: 🔶 Partial (basic dashboard, missing search/filter/bulk actions)
 - **Requirements**:
-  - Card or table view of PRDs
-  - Display: title, status, last modified date, creation date
-  - Search by title or content
-  - Filter by status, date range
-  - Sort by date, alphabetical, status
-  - Bulk actions (export, delete)
-  - Quick actions: View, Edit, Duplicate, Delete, Download
+  - ✅ Card or table view of PRDs
+  - ✅ Display: title, status, last modified date, creation date
+  - ⏳ Search by title or content (not yet implemented)
+  - ⏳ Filter by status, date range (not yet implemented)
+  - ⏳ Sort by date, alphabetical, status (not yet implemented)
+  - ⏳ Bulk actions (export, delete) (not yet implemented)
+  - 🔶 Quick actions: View, Edit, ~~Duplicate~~, Delete, Download (duplicate not implemented)
 
-### FR-006: Export and Download
+### FR-006: Export and Download [PARTIAL]
 - **Priority**: P0 (Must Have)
 - **Description**: PRD file export functionality
+- **Implementation Status**: 🔶 Partial (individual download only)
 - **Requirements**:
-  - Download individual PRD as .md file
-  - Download multiple PRDs as ZIP archive
-  - Organized folder structure in ZIP: `project-name/project-name-prd.md`
-  - Copy to clipboard functionality
-  - Export includes metadata file
+  - ✅ Download individual PRD as .md file
+  - ⏳ Download multiple PRDs as ZIP archive (not yet implemented)
+  - ⏳ Organized folder structure in ZIP (not yet implemented)
+  - ⏳ Copy to clipboard functionality (not yet implemented)
+  - ⏳ Export includes metadata file (not yet implemented)
 
-### FR-007: Template Management
+### FR-007: Template Management [NOT IMPLEMENTED]
 - **Priority**: P1 (Should Have)
 - **Description**: Customizable PRD templates
+- **Implementation Status**: ❌ Not yet implemented
 - **Requirements**:
-  - Default template provided out of box
-  - Create new template from existing PRD
-  - Edit template structure (add/remove/reorder sections)
-  - Set default template per user
-  - Share templates across organization (admin only)
+  - ✅ Default template provided out of box (hardcoded 13 sections)
+  - ⏳ Create new template from existing PRD
+  - ⏳ Edit template structure (add/remove/reorder sections)
+  - ⏳ Set default template per user
+  - ⏳ Share templates across organization (admin only)
 
-### FR-008: Collaboration Features
+### FR-008: Collaboration Features [NOT IMPLEMENTED]
 - **Priority**: P2 (Nice to Have)
 - **Description**: Basic collaboration capabilities
+- **Implementation Status**: ❌ Not yet implemented (Phase 3 feature)
 - **Requirements**:
-  - Share PRD via unique link
-  - View-only and edit permissions
-  - Comment threads on specific sections
-  - Version history and diff view
-  - Notification when shared PRD is updated
+  - ⏳ Share PRD via unique link
+  - ⏳ View-only and edit permissions
+  - ⏳ Comment threads on specific sections
+  - ⏳ Version history and diff view
+  - ⏳ Notification when shared PRD is updated
 
-### FR-009: AI-Powered Quality Checks
+### FR-009: AI-Powered Quality Checks [PARTIAL]
 - **Priority**: P1 (Should Have)
 - **Description**: Automated PRD quality validation
+- **Implementation Status**: 🔶 Partial (basic completeness score only)
 - **Requirements**:
-  - Completeness check (all required sections filled)
-  - Consistency check (goals align with success metrics)
-  - Clarity score (readability analysis)
-  - Claude-powered suggestions for improvement
-  - Quality score displayed (0-100)
+  - ✅ Completeness check (all required sections filled) - basic scoring
+  - ⏳ Consistency check (goals align with success metrics)
+  - ⏳ Clarity score (readability analysis)
+  - ⏳ Claude-powered suggestions for improvement
+  - ✅ Quality score displayed (0-100) - completeness percentage
 
-### FR-010: Integration with Development Tools
+### FR-010: Integration with Development Tools [NOT IMPLEMENTED]
 - **Priority**: P2 (Nice to Have)
 - **Description**: Direct integration with development workflows
+- **Implementation Status**: ❌ Not yet implemented (Phase 3 feature)
 - **Requirements**:
-  - GitHub integration (push PRD to repository)
-  - Jira/Linear integration (create tickets from user stories)
-  - Slack notifications for PRD status changes
-  - API for programmatic access
+  - ⏳ GitHub integration (push PRD to repository)
+  - ⏳ Jira/Linear integration (create tickets from user stories)
+  - ⏳ Slack notifications for PRD status changes
+  - ⏳ API for programmatic access
 
-### FR-011: PRD HTML View
+### FR-011: PRD HTML View [NOT IMPLEMENTED]
 - **Priority**: P0 (Must Have)
 - **Description**: Clean HTML view page for PRD review and sharing
+- **Implementation Status**: ❌ Not yet implemented
 - **Requirements**:
-  - Dedicated route at `/prd/:id/view` for each PRD
-  - Professional, clean layout optimized for reading
-  - Table of contents with anchor links to each section
-  - Smooth-scroll navigation when clicking TOC items
-  - Section completion indicators in TOC (checkmark for completed sections)
-  - Metadata header showing title, status, version, dates
-  - Completeness progress bar
-  - Action buttons: Print/PDF, Copy Link, Edit PRD
-  - Print styles via CSS `@media print` rules
-  - Hidden action buttons and navigation when printing
-  - Page break optimization for PDF export
-  - Authentication required (no public sharing in MVP)
+  - ⏳ Dedicated route at `/prd/:id/view` for each PRD
+  - ⏳ Professional, clean layout optimized for reading
+  - ⏳ Table of contents with anchor links to each section
+  - ⏳ Smooth-scroll navigation when clicking TOC items
+  - ⏳ Section completion indicators in TOC (checkmark for completed sections)
+  - ⏳ Metadata header showing title, status, version, dates
+  - ⏳ Completeness progress bar
+  - ⏳ Action buttons: Print/PDF, Copy Link, Edit PRD
+  - ⏳ Print styles via CSS `@media print` rules
+  - ⏳ Hidden action buttons and navigation when printing
+  - ⏳ Page break optimization for PDF export
+  - ⏳ Authentication required (no public sharing in MVP)
 
-### FR-012: Transcript Import for PRD Creation
+### FR-012: Transcript Import for PRD Creation [NOT IMPLEMENTED]
 - **Priority**: P1 (Should Have)
 - **Description**: AI-powered extraction of PRD content from meeting transcripts
+- **Implementation Status**: ❌ Not yet implemented
 - **Requirements**:
-  - "Create from Transcript" button on dashboard
-  - File upload supporting .txt and .vtt formats
-  - VTT parser to extract text from WebVTT caption files
-  - Text paste area for manual transcript input
-  - Character limit: 100 minimum, 50,000 maximum
-  - SSE streaming for real-time progress updates during analysis
-  - Claude integration to extract content for all 13 PRD sections
-  - Confidence level indicators (high/medium/low) per section
-  - Source quote attribution showing original transcript text
-  - Preview interface with section toggles (include/exclude)
-  - Suggested title generation based on transcript content
-  - Direct PRD creation from extracted content
-  - Navigation to editor after successful creation
+  - ⏳ "Create from Transcript" button on dashboard
+  - ⏳ File upload supporting .txt and .vtt formats
+  - ⏳ VTT parser to extract text from WebVTT caption files
+  - ⏳ Text paste area for manual transcript input
+  - ⏳ Character limit: 100 minimum, 50,000 maximum
+  - ⏳ SSE streaming for real-time progress updates during analysis
+  - ⏳ Claude integration to extract content for all 13 PRD sections
+  - ⏳ Confidence level indicators (high/medium/low) per section
+  - ⏳ Source quote attribution showing original transcript text
+  - ⏳ Preview interface with section toggles (include/exclude)
+  - ⏳ Suggested title generation based on transcript content
+  - ⏳ Direct PRD creation from extracted content
+  - ⏳ Navigation to editor after successful creation
 
 **Transcript Analysis Prompt:**
 - System prompt instructs Claude to extract PRD content from transcript
@@ -488,10 +500,10 @@ version: [Semantic Version]
 - **Monitoring**: Sentry for error tracking
 
 **Claude Integration:**
-- **API**: Anthropic Claude API (claude-sonnet-4.5)
+- **API**: Anthropic Claude API (claude-sonnet-4-20250514)
 - **Streaming**: Server-Sent Events (SSE) for streaming responses
 - **Context Management**: Maintain conversation history per section
-- **Rate Limiting**: Token bucket algorithm
+- **Rate Limiting**: Token bucket algorithm (10 requests/minute per user)
 
 ### Data Models
 
@@ -561,41 +573,42 @@ interface Message {
 
 ### API Endpoints
 
-**Authentication**
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/reset-password` - Password reset
+**Authentication** (✅ All implemented except password reset)
+- `POST /api/auth/register` - User registration ✅
+- `POST /api/auth/login` - User login ✅
+- `POST /api/auth/logout` - User logout ✅
+- `POST /api/auth/refresh` - Refresh access token ✅
+- `GET /api/auth/me` - Get current user ✅
+- `POST /api/auth/reset-password` - Password reset ⏳
 
-**PRD Management**
-- `GET /api/prds` - List all PRDs for user (with pagination, filters)
-- `POST /api/prds` - Create new PRD
-- `GET /api/prds/:id` - Get specific PRD
-- `PUT /api/prds/:id` - Update PRD
-- `DELETE /api/prds/:id` - Delete PRD
-- `POST /api/prds/:id/duplicate` - Duplicate existing PRD
-- `GET /api/prds/:id/download` - Download PRD as markdown
-- `POST /api/prds/bulk-export` - Export multiple PRDs as ZIP
+**PRD Management** (✅ Core CRUD implemented)
+- `GET /api/prds` - List all PRDs for user (with pagination) ✅
+- `POST /api/prds` - Create new PRD ✅
+- `GET /api/prds/:id` - Get specific PRD ✅
+- `PUT /api/prds/:id` - Update PRD ✅
+- `DELETE /api/prds/:id` - Delete PRD ✅
+- `GET /api/prds/:id/download` - Download PRD as markdown ✅
+- `POST /api/prds/:id/duplicate` - Duplicate existing PRD ⏳
+- `POST /api/prds/bulk-export` - Export multiple PRDs as ZIP ⏳
 
-**PRD View (Frontend Route)**
-- `/prd/:id/view` - Clean HTML view page for PRD review (uses same GET `/api/prds/:id` endpoint)
+**PRD View (Frontend Route)** ⏳ Not yet implemented
+- `/prd/:id/view` - Clean HTML view page for PRD review
 
-**Planning Mode**
-- `POST /api/prds/:id/sections/:sectionId/plan` - Start planning conversation
-- `POST /api/prds/:id/sections/:sectionId/plan/message` - Send message to Claude
-- `GET /api/prds/:id/sections/:sectionId/plan/history` - Get conversation history
+**Planning Mode** (✅ Core streaming implemented)
+- `POST /api/prds/:id/sections/:sectionId/plan/message` - Send message to Claude (SSE) ✅
+- `POST /api/prds/:id/sections/:sectionId/plan` - Start planning conversation ⏳
+- `GET /api/prds/:id/sections/:sectionId/plan/history` - Get conversation history ⏳
 
-**Transcript Import**
+**Transcript Import** ⏳ Not yet implemented
 - `POST /api/transcript/analyze` - Analyze transcript and extract PRD content (SSE streaming)
 
-**Templates**
+**Templates** ⏳ Not yet implemented
 - `GET /api/templates` - List available templates
 - `POST /api/templates` - Create new template
 - `PUT /api/templates/:id` - Update template
 - `DELETE /api/templates/:id` - Delete template
 
-**Quality**
+**Quality** ⏳ Not yet implemented
 - `POST /api/prds/:id/validate` - Run quality checks
 - `GET /api/prds/:id/quality-score` - Get quality metrics
 
@@ -1186,12 +1199,40 @@ The quality scoring system evaluates PRDs on the following dimensions:
 
 ---
 
+## Implementation Status Summary
+
+**Legend:**
+- ✅ = Implemented
+- 🔶 = Partially implemented
+- ⏳ = Not yet implemented
+- ❌ = Not implemented
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| FR-001: Authentication | ✅ | Missing password reset |
+| FR-002: PRD Form Interface | ✅ | Complete with 13 sections |
+| FR-003: Claude Planning Mode | ✅ | SSE streaming, conversation history |
+| FR-004: Markdown Generation | ✅ | YAML frontmatter, proper formatting |
+| FR-005: PRD Dashboard | 🔶 | Basic list, missing search/filter |
+| FR-006: Export/Download | 🔶 | Single file only, no bulk export |
+| FR-007: Templates | ⏳ | Hardcoded sections only |
+| FR-008: Collaboration | ⏳ | Phase 3 feature |
+| FR-009: Quality Checks | 🔶 | Basic completeness score |
+| FR-010: Integrations | ⏳ | Phase 3 feature |
+| FR-011: PRD HTML View | ⏳ | Not yet implemented |
+| FR-012: Transcript Import | ⏳ | Not yet implemented |
+
+**Current Phase:** Phase 1 MVP (Core features complete, polish in progress)
+
+---
+
 ## Document Control
 
 **Version History:**
 - v1.0.0 (2026-01-12): Initial PRD
 - v1.1.0 (2026-01-13): Added PRD HTML View feature (US-006, FR-011)
 - v1.2.0 (2026-01-13): Added Transcript Import feature (US-007, FR-012) - AI-powered PRD creation from meeting transcripts with .txt/.vtt support
+- v1.3.0 (2026-01-22): Updated implementation status markers across all functional requirements, corrected Claude model reference (claude-sonnet-4-20250514), added Implementation Status Summary table
 
 **Approval:**
 - Product Manager: [Pending]
