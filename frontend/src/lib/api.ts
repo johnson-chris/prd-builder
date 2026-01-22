@@ -208,8 +208,16 @@ export const planningApi = {
   },
 };
 
+export interface PreprocessedInfo {
+  originalChars: number;
+  cleanedChars: number;
+  reductionPercent: number;
+  speakerMap: Record<string, string>;
+}
+
 export interface TranscriptAnalysisCallbacks {
   onProgress: (stage: string, progress: number) => void;
+  onPreprocessed?: (info: PreprocessedInfo) => void;
   onSection: (section: ExtractedSection) => void;
   onComplete: (suggestedTitle: string, analysisNotes: string) => void;
   onError: (error: Error) => void;
@@ -262,6 +270,16 @@ export const transcriptApi = {
                   case 'progress':
                     callbacks.onProgress(parsed.stage, parsed.progress);
                     break;
+                  case 'preprocessed':
+                    if (callbacks.onPreprocessed) {
+                      callbacks.onPreprocessed({
+                        originalChars: parsed.originalChars,
+                        cleanedChars: parsed.cleanedChars,
+                        reductionPercent: parsed.reductionPercent,
+                        speakerMap: parsed.speakerMap,
+                      });
+                    }
+                    break;
                   case 'section':
                     callbacks.onSection({
                       sectionId: parsed.sectionId,
@@ -270,6 +288,7 @@ export const transcriptApi = {
                       confidence: parsed.confidence,
                       confidenceReason: parsed.confidenceReason,
                       sourceQuotes: parsed.sourceQuotes,
+                      sourceFiles: [],
                       included: true,
                     });
                     break;
@@ -300,6 +319,7 @@ export interface FileExtractedSection {
   sectionTitle: string;
   content: string;
   confidence: 'high' | 'medium' | 'low';
+  confidenceReason?: string;
   sourceFiles: FileSource[];
   included: boolean;
 }

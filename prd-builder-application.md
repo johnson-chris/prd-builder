@@ -180,19 +180,22 @@ So that I can quickly bootstrap a PRD from stakeholder discussions
 3. System packages PRDs into ZIP file with organized folder structure
 4. User downloads package for integration with development workflow
 
-**Use Case 4: Create PRD from Meeting Transcript**
+**Use Case 4: Create PRD from Meeting Transcript** ✅ Implemented
 1. User clicks "Create from Transcript" on dashboard
 2. System opens transcript import wizard
 3. User uploads .txt or .vtt file OR pastes transcript text
-4. User clicks "Analyze Transcript"
-5. System shows progress as Claude processes transcript
-6. System displays extracted content for each PRD section with confidence levels
-7. User reviews source quotes to verify extraction accuracy
-8. User toggles off any sections to exclude
-9. User modifies suggested PRD title if needed
-10. User clicks "Create PRD"
-11. System creates PRD with pre-filled sections
-12. System navigates to editor for further refinement
+4. If transcript exceeds 50k characters, system shows warning that auto-cleaning will occur
+5. User clicks "Analyze Transcript"
+6. System automatically preprocesses large transcripts (removes timestamps, filler words, backchannels)
+7. System shows preprocessing stats (original chars, cleaned chars, reduction %, speaker abbreviations)
+8. System shows progress as Claude processes transcript
+9. System displays extracted content for each PRD section with confidence levels
+10. User reviews source quotes to verify extraction accuracy
+11. User toggles off any sections to exclude
+12. User modifies suggested PRD title if needed
+13. User clicks "Create PRD"
+14. System creates PRD with pre-filled sections
+15. System navigates to editor for further refinement
 
 ## Functional Requirements
 
@@ -360,30 +363,53 @@ version: [Semantic Version]
   - ⏳ Page break optimization for PDF export
   - ⏳ Authentication required (no public sharing in MVP)
 
-### FR-012: Transcript Import for PRD Creation [NOT IMPLEMENTED]
+### FR-012: Transcript Import for PRD Creation [IMPLEMENTED]
 - **Priority**: P1 (Should Have)
 - **Description**: AI-powered extraction of PRD content from meeting transcripts
-- **Implementation Status**: ❌ Not yet implemented
+- **Implementation Status**: ✅ Complete
 - **Requirements**:
-  - ⏳ "Create from Transcript" button on dashboard
-  - ⏳ File upload supporting .txt and .vtt formats
-  - ⏳ VTT parser to extract text from WebVTT caption files
-  - ⏳ Text paste area for manual transcript input
-  - ⏳ Character limit: 100 minimum, 50,000 maximum
-  - ⏳ SSE streaming for real-time progress updates during analysis
-  - ⏳ Claude integration to extract content for all 13 PRD sections
-  - ⏳ Confidence level indicators (high/medium/low) per section
-  - ⏳ Source quote attribution showing original transcript text
-  - ⏳ Preview interface with section toggles (include/exclude)
-  - ⏳ Suggested title generation based on transcript content
-  - ⏳ Direct PRD creation from extracted content
-  - ⏳ Navigation to editor after successful creation
+  - ✅ "Create from Transcript" button on dashboard
+  - ✅ File upload supporting .txt and .vtt formats
+  - ✅ VTT parser to extract text from WebVTT caption files
+  - ✅ Text paste area for manual transcript input
+  - ✅ Character limit: 100 minimum, soft limit at 50,000 (auto-preprocessing for larger)
+  - ✅ SSE streaming for real-time progress updates during analysis
+  - ✅ Claude integration to extract content for all 13 PRD sections
+  - ✅ Confidence level indicators (high/medium/low) per section
+  - ✅ Source quote attribution showing original transcript text
+  - ✅ Preview interface with section toggles (include/exclude)
+  - ✅ Suggested title generation based on transcript content
+  - ✅ Direct PRD creation from extracted content
+  - ✅ Navigation to editor after successful creation
 
 **Transcript Analysis Prompt:**
 - System prompt instructs Claude to extract PRD content from transcript
 - Outputs structured JSON per section with content, confidence, and quotes
 - Confidence levels based on explicit vs. inferred information
 - Handles incomplete transcripts gracefully with low-confidence placeholders
+
+### FR-013: Transcript Preprocessing [IMPLEMENTED]
+- **Priority**: P1 (Should Have)
+- **Description**: Automatic cleaning of large transcripts to fit within analysis limits
+- **Implementation Status**: ✅ Complete
+- **Requirements**:
+  - ✅ Automatic preprocessing for transcripts exceeding 50,000 characters
+  - ✅ VTT and TXT format parsing with speaker detection
+  - ✅ Timestamp removal from transcript content
+  - ✅ Filler word removal (um, uh, like, you know, basically, actually, etc.)
+  - ✅ Backchannel response filtering (yeah, okay, right, mm-hmm, etc.)
+  - ✅ Consecutive same-speaker utterance merging
+  - ✅ Speaker name abbreviation (e.g., "Alberto Hernandez" → "AH")
+  - ✅ Progressive minimum utterance length filtering
+  - ✅ Common abbreviation application (MVP, API, PRD, etc.)
+  - ✅ Aggressive mode for extremely large transcripts
+  - ✅ Preprocessing stats displayed during analysis (original/cleaned chars, reduction %)
+  - ✅ Speaker abbreviation legend shown to user
+  - ✅ Standalone preprocessing endpoint for manual use
+
+**API Endpoints:**
+- `POST /api/transcript/preprocess` - Manual preprocessing with options
+- `POST /api/transcript/analyze` - Analysis with automatic preprocessing
 
 ## Non-Functional Requirements
 
@@ -599,8 +625,9 @@ interface Message {
 - `POST /api/prds/:id/sections/:sectionId/plan` - Start planning conversation ⏳
 - `GET /api/prds/:id/sections/:sectionId/plan/history` - Get conversation history ⏳
 
-**Transcript Import** ⏳ Not yet implemented
-- `POST /api/transcript/analyze` - Analyze transcript and extract PRD content (SSE streaming)
+**Transcript Import** ✅ Implemented
+- `POST /api/transcript/analyze` - Analyze transcript and extract PRD content (SSE streaming, auto-preprocessing)
+- `POST /api/transcript/preprocess` - Manual transcript preprocessing with options
 
 **Templates** ⏳ Not yet implemented
 - `GET /api/templates` - List available templates
@@ -1220,9 +1247,10 @@ The quality scoring system evaluates PRDs on the following dimensions:
 | FR-009: Quality Checks | 🔶 | Basic completeness score |
 | FR-010: Integrations | ⏳ | Phase 3 feature |
 | FR-011: PRD HTML View | ⏳ | Not yet implemented |
-| FR-012: Transcript Import | ⏳ | Not yet implemented |
+| FR-012: Transcript Import | ✅ | SSE streaming, confidence levels, source quotes |
+| FR-013: Transcript Preprocessing | ✅ | Auto-cleaning for large transcripts (>50k chars) |
 
-**Current Phase:** Phase 1 MVP (Core features complete, polish in progress)
+**Current Phase:** Phase 2 Enhancement (Core MVP complete, transcript import implemented with preprocessing)
 
 ---
 
@@ -1233,6 +1261,7 @@ The quality scoring system evaluates PRDs on the following dimensions:
 - v1.1.0 (2026-01-13): Added PRD HTML View feature (US-006, FR-011)
 - v1.2.0 (2026-01-13): Added Transcript Import feature (US-007, FR-012) - AI-powered PRD creation from meeting transcripts with .txt/.vtt support
 - v1.3.0 (2026-01-22): Updated implementation status markers across all functional requirements, corrected Claude model reference (claude-sonnet-4-20250514), added Implementation Status Summary table
+- v1.4.0 (2026-01-22): Implemented FR-012 (Transcript Import) and FR-013 (Transcript Preprocessing) - automatic cleaning for large transcripts including filler word removal, backchannel filtering, speaker abbreviation, and progressive utterance filtering
 
 **Approval:**
 - Product Manager: [Pending]

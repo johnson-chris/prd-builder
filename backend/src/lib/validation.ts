@@ -73,8 +73,34 @@ export const analyzeFilesSchema = z.object({
     .optional(),
 });
 
+export const preprocessTranscriptSchema = z.object({
+  content: z
+    .string()
+    .min(100, 'Content must be at least 100 characters'),
+  fileType: z
+    .enum(['txt', 'vtt'])
+    .optional()
+    .default('txt'),
+  targetChars: z
+    .number()
+    .int()
+    .positive()
+    .max(100000, 'Target must be less than 100,000 characters')
+    .optional()
+    .default(50000),
+  preserveTimestamps: z
+    .boolean()
+    .optional()
+    .default(false),
+  aggressive: z
+    .boolean()
+    .optional()
+    .default(false),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreatePrdInput = z.infer<typeof createPrdSchema>;
 export type UpdatePrdInput = z.infer<typeof updatePrdSchema>;
 export type PlanningMessageInput = z.infer<typeof planningMessageSchema>;
+export type PreprocessTranscriptInput = z.infer<typeof preprocessTranscriptSchema>;

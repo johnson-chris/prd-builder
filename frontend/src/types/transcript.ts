@@ -22,8 +22,16 @@ export interface TranscriptAnalysisResult {
   analysisNotes: string;
 }
 
+export interface PreprocessedInfo {
+  originalChars: number;
+  cleanedChars: number;
+  reductionPercent: number;
+  speakerMap: Record<string, string>;
+}
+
 export type TranscriptSSEEvent =
   | { type: 'progress'; stage: string; progress: number }
+  | { type: 'preprocessed'; originalChars: number; cleanedChars: number; reductionPercent: number; speakerMap: Record<string, string> }
   | { type: 'section'; sectionId: string; sectionTitle: string; content: string; confidence: ConfidenceLevel; confidenceReason?: string; sourceQuotes: string[] }
   | { type: 'complete'; suggestedTitle: string; analysisNotes: string }
   | { type: 'error'; message: string };

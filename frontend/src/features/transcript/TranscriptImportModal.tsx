@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { transcriptApi } from '@/lib/api';
+import { transcriptApi, type PreprocessedInfo } from '@/lib/api';
 import { usePrdStore } from '@/stores/prdStore';
 import type { ExtractedSection } from '@/types';
 import { TranscriptInput } from './components/TranscriptInput';
@@ -28,6 +28,7 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
   const [stage, setStage] = useState('analyzing');
   const [progress, setProgress] = useState(0);
   const [abortFn, setAbortFn] = useState<(() => void) | null>(null);
+  const [preprocessedInfo, setPreprocessedInfo] = useState<PreprocessedInfo | null>(null);
 
   // Preview state
   const [sections, setSections] = useState<ExtractedSection[]>([]);
@@ -48,6 +49,7 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
       setSuggestedTitle('');
       setAnalysisNotes('');
       setIsCreating(false);
+      setPreprocessedInfo(null);
       if (abortFn) abortFn();
     }
   }, [isOpen, abortFn]);
@@ -57,15 +59,12 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
       setError('Transcript must be at least 100 characters');
       return;
     }
-    if (transcript.length > 50000) {
-      setError('Transcript must be less than 50,000 characters');
-      return;
-    }
 
     setError(undefined);
     setStep('processing');
     setProgress(0);
     setSections([]);
+    setPreprocessedInfo(null);
 
     const abort = transcriptApi.analyze(
       transcript,
@@ -73,6 +72,10 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
         onProgress: (s, p) => {
           setStage(s);
           setProgress(p);
+        },
+        onPreprocessed: (info) => {
+          setPreprocessedInfo(info);
+          setStage('preprocessing');
         },
         onSection: (section) => {
           setSections((prev) => [...prev, section]);
@@ -250,6 +253,7 @@ export function TranscriptImportModal({ isOpen, onClose }: TranscriptImportModal
               stage={stage}
               progress={progress}
               onCancel={handleCancel}
+              preprocessedInfo={preprocessedInfo}
             />
           )}
 

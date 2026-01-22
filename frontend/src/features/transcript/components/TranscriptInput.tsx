@@ -8,7 +8,7 @@ interface TranscriptInputProps {
   error?: string;
 }
 
-const MAX_CHARS = 50000;
+const SOFT_LIMIT = 50000;
 const MIN_CHARS = 100;
 const MAX_CONTEXT_CHARS = 2000;
 const ACCEPTED_EXTENSIONS = ['.txt', '.vtt'];
@@ -63,7 +63,7 @@ export function TranscriptInput({ value, onChange, context, onContextChange, err
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const charCount = value.length;
-  const isOverLimit = charCount > MAX_CHARS;
+  const isOverSoftLimit = charCount > SOFT_LIMIT;
   const isUnderLimit = charCount > 0 && charCount < MIN_CHARS;
   const contextCharCount = context.length;
   const isContextOverLimit = contextCharCount > MAX_CONTEXT_CHARS;
@@ -243,23 +243,35 @@ export function TranscriptInput({ value, onChange, context, onContextChange, err
           placeholder="Paste your meeting transcript here..."
           rows={10}
           className={`w-full rounded-2xl border-2 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:bg-white focus:outline-none transition-colors resize-none ${
-            isOverLimit || error ? 'border-red-300' : 'border-stone-200'
+            error ? 'border-red-300' : isOverSoftLimit ? 'border-amber-300' : 'border-stone-200'
           }`}
         />
-        <div className="mt-2 flex items-center justify-between">
-          <div>
-            {error && (
-              <p className="text-xs text-red-600">{error}</p>
-            )}
-            {isUnderLimit && !error && (
-              <p className="text-xs text-amber-600">
-                Minimum {MIN_CHARS} characters required ({MIN_CHARS - charCount} more needed)
-              </p>
-            )}
+        <div className="mt-2 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <div>
+              {error && (
+                <p className="text-xs text-red-600">{error}</p>
+              )}
+              {isUnderLimit && !error && (
+                <p className="text-xs text-amber-600">
+                  Minimum {MIN_CHARS} characters required ({MIN_CHARS - charCount} more needed)
+                </p>
+              )}
+            </div>
+            <p className={`text-xs ${isOverSoftLimit ? 'text-amber-600' : 'text-stone-400'}`}>
+              {charCount.toLocaleString()} characters
+            </p>
           </div>
-          <p className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-stone-400'}`}>
-            {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()} characters
-          </p>
+          {isOverSoftLimit && !error && (
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+              <svg className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <p className="text-xs text-amber-700">
+                <span className="font-medium">Large transcript detected.</span> It will be automatically cleaned by removing timestamps, filler words, and short responses to fit within the analysis limit.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

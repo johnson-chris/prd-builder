@@ -182,3 +182,24 @@ export function createDefaultSections(): Section[] {
     planningEnabled: false,
   }));
 }
+
+// Transcript preprocessing types
+export type TranscriptFileType = 'txt' | 'vtt';
+
+export interface TranscriptPreprocessRequest {
+  content: string;
+  fileType: TranscriptFileType;
+  targetChars?: number;
+  preserveTimestamps?: boolean;
+  aggressive?: boolean;
+}
+
+export interface TranscriptPreprocessResponse {
+  originalChars: number;
+  cleanedChars: number;
+  reductionPercent: number;
+  content: string;
+  speakerMap: Record<string, string>;
+  wasProcessed: boolean;
+  minUtteranceLength: number;
+}
